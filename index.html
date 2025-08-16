@@ -1,1 +1,323 @@
-Emma0406
+<!DOCTYPE html>
+
+<html>
+<head>
+  <meta http-equiv="CONTENT-TYPE" content="text/html; charset=UTF-8">
+  <link rel="stylesheet" href="styles/style.css"/>
+  <title>Bienvenue sur ton site</title>
+  <style>
+  body{
+  font-family:arial;
+  color:royalblue;
+    background-color:beige;
+    height:100px;
+    text-align:center;
+    font-size:17px;
+    margin:auto}
+  h1{
+    width:104%;
+    height:100%;
+    color:blue;
+    border:10px blue;
+    font-style:italic;
+    text-shadow:3px 2px lightblue;
+    text-align:center}
+  h2{
+  width:350px;
+    height:100px;
+    color:Marron;
+    font-style:italic;
+    text-align:center;
+  text-decoration:blink}
+  form{
+    background-color:beige;
+    width:325px;
+    color:blue;
+    font-style:normal}
+  label{
+    color:blue;
+    text-align:left;
+    font-style:italic;
+    width:60%;}
+  button{
+    color:royalblue;
+    background-color:beige;
+    font-style:normal;
+    text-align:center;
+    font-weight:bold;
+    cursor:pointer;
+    padding:10px 5px;
+    Width:40%}
+  .ligne{
+    display:flex;
+    align-items:center;
+    margin-bottom:10px}
+  .ligne label{
+    width:200%;
+    color:lemon chiffon;
+    font-style:italic}
+  .ligne input{
+    flex:500px;
+    padding:3px;
+    margin-left:10px;
+    border-radius:50px}
+  
+  
+     
+   
+    
+    
+    
+  
+ </style>
+  
+    
+  
+</head>
+<body>
+  <h1>Bienvenue sur ton site</h1>
+  <h2>Inscris-toi pour accéder à ton espace!</h2>  
+  <form id="formulaire">
+    
+    
+    <div class="ligne">
+    <label for="pseudo">Pseudo:</label>
+    <input type="text" 
+      id="pseudo" required>
+    </div>
+    
+    <div class="ligne">
+    
+    <label for="code">Code:</label>
+    <input type="password"
+            id="code"required>
+    </div>
+    <button
+      type="submit">s'inscrire</button>
+    
+  </form>
+  <p id="message"></p>
+  <script>
+// 1. Quand la page se charge, on regarde s’il y a un pseudo enregistré
+let pseudoSauvegarde = localStorage.getItem("pseudo");
+
+if (pseudoSauvegarde) {
+  document.getElementById("message").textContent = "Bienvenue " + pseudoSauvegarde + " !";
+}
+
+if (code === "2025") {
+  localStorage.setItem("pseudo", pseudo); // Enregistre le pseudo
+  window.location.href = "taches.html";  // Redirige vers la page des tâches
+}
+
+  let pseudo = document.getElementById("pseudo").value;
+  let code = document.getElementById("code").value;
+
+  if (code === "2025") {
+    localStorage.setItem("pseudo", pseudo); // On enregistre
+    document.getElementById("message").textContent = "Bienvenue " + pseudo + " !";
+  } else {
+    alert("Code incorrect !");
+  }
+});
+</script>
+    
+  
+</body>
+</html>
+<!DOCTYPE html>  <html>  
+<head>  
+  <meta http-equiv="CONTENT-TYPE" content="text/html; charset=UTF-8">  
+  <link rel="stylesheet" href="styles/style.css"/>  
+  <title>Mes petites choses à faire</title>  
+  <style>  
+       body{  
+             background-color:white;
+             color:black; 
+             font-family:arial,sans-serif; 
+             Height:900px;
+             text-align:center;  
+            text-indent:5%;  
+        max-width:900px;  
+         maggin:auto;  
+         font-size:19px}  
+           
+        h1{  
+             width:424px;  
+            color:limegreen;  
+           border:5px green ;  
+           font-style:normal;  
+              text-shadow:4px 4px green;
+              height:50px;
+              text-align:center;
+        } 
+      
+              h2{
+       color:Lightgreen;
+text-shadow: 2px 4px 3px darkgreen;
+                    text-align:center;
+                    padding:20px;
+                    maggin:50px
+              }  
+.titre-box{
+   color:darkgreen;
+padding:20px;
+magging:20px auto;
+border-radius:15px;
+      width:10%;
+      box-shadow:0 0 10px rgba(0,0,0,0,0.5)}     
+      
+      
+         ul{  
+     width:95%;  
+     color:black; 
+text-align:left;              
+       
+     font-weight:normal;  
+     font-style:italic;  
+         text-indent:-7%;  
+   list-style-position:inside}
+      button{
+            background-color:white;
+            color:green;
+            border:1px solid green;
+            border-radius:5px;
+            text-align:center;
+            display:block;
+            margin:0 auto;
+      padding:15px 30px}  
+       a{
+          color:darkgreen;
+       text-decoration: none} 
+button{
+        color:green;    
+         height:8%;
+      width:290px;
+      margin-bottom:10px;
+text-align:center}
+      input{
+            color:red;
+            width:200px;
+            height:30px;
+            margin-bottom:10px;
+            text-align:center}
+.Commentaire{
+font-style:italic;
+color:#ffccOO;
+ text-align:center;
+      margin-bottom:20px}
+      </style>
+</head>
+
+<body>  
+      <div class="titre-box">
+  <h1>Mes petites choses à faire</h1> 
+      </div>
+<h2 id="bienvenue-user"></h2>      
+  <p class="commentaire">  
+    Chaque jour,je prends le contrôle et je dépasse mes limites</p> 
+      
+            <h2>Tâche du jour</h2>
+      <ul>
+<li>5h00-Je prie</li>  
+  <li>5h30-Je fais un peu le ménage</li>  
+  <li>5h50-Je révise mes cours </li>  
+  <li>6h-Je m'apprête pour l'école</li>
+            </ul>  
+      <h2>Tâche du soir</h2>
+      <ul>
+            <li>20h-Relire mes cours de la journée</li>
+            <li>21h-Faire mes exercices</li>
+            <li>22h-Réviser mes cours du lendemain</li>
+      </ul>
+      <p id="message-js"></p>
+
+      <button id="ajouter">ajouter une tâche(plus tard)</button>  
+      <p> <a href="tel:0166932123">Facebook</a></p> 
+      <script src="script.js"></script>
+      <h1 id="message">Chargement...</h1>
+      
+
+
+<input type="text" id="tache-input" placeholder="Écris ta tâche ici">
+<button onclick="ajouterTache()">Ajouter</button>
+      <button 1 onclick="seDeconnecter()">Se déconnecter</button>
+<ul id="liste-taches"></ul>
+     
+   </body>
+            
+</html>  
+<script>
+// Charger les tâches existantes depuis localStorage ou créer une liste vide
+let taches = JSON.parse(localStorage.getItem("taches")) || [];
+
+// Affiche toutes les tâches à l'écran, triées et formatées
+function afficherTaches() {
+  const ul = document.getElementById("liste-taches");
+  ul.innerHTML = "";
+
+  // 🔁 Trier : tâches non faites (false) en haut
+  taches.sort((a, b) => a.faite - b.faite);
+
+  // Boucle d’affichage
+  taches.forEach((tache, index) => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <strong>${tache.texte}</strong><br>
+      <small>${tache.date}</small>
+    `;
+    li.style.textDecoration = tache.faite ? "line-through" : "none";
+
+    // ✅ Clic pour marquer/démarquer comme faite
+    li.addEventListener("click", () => {
+      taches[index].faite = !taches[index].faite;
+      sauvegarderEtAfficher();
+    });
+
+    // ❌ Bouton pour supprimer
+    const boutonSupprimer = document.createElement("button");
+    boutonSupprimer.textContent = "❌";
+    boutonSupprimer.style.marginLeft = "10px";
+    boutonSupprimer.addEventListener("click", () => {
+      taches.splice(index, 1);
+      sauvegarderEtAfficher();
+    });
+
+    li.appendChild(boutonSupprimer);
+    ul.appendChild(li);
+  });
+}
+
+// Ajouter une tâche avec la date et l'heure
+function ajouterTache() {
+  const input = document.getElementById("tache-input");
+  const texte = input.value.trim();
+  if (texte !== "") {
+    const maintenant = new Date();
+    const date = maintenant.toLocaleString(); // Exemple : 12/08/2025, 17:30:02
+    taches.push({ texte: texte, faite: false, date: date });
+    input.value = "";
+    sauvegarderEtAfficher();
+  }
+}
+
+// Sauvegarde des tâches dans localStorage et affichage à jour
+function sauvegarderEtAfficher() {
+  localStorage.setItem("taches", JSON.stringify(taches));
+  afficherTaches();
+}
+
+// Charger automatiquement à l’ouverture de la page
+afficherTaches();
+// Récupérer le pseudo depuis le localStorage
+let pseudo = localStorage.getItem("pseudo");
+
+// Affiche le pseudo s’il existe
+if (pseudo) {
+  document.getElementById("bienvenue-user").textContent = "Bienvenue " + pseudo + " 👋";
+} else {
+  // S'il n'y a pas de pseudo (accès direct), on retourne à la page de connexion
+  window.location.href = "connexion.html";
+}
+  </script>
+  
