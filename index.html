@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mes petites choses à faire</title>
+  <title>Mon bloc note</title>
   <style>
     :root { --green:#2ecc71; --dark:#145a32; }
     body { font-family: Arial, sans-serif; margin:0 auto; max-width:900px; padding:24px; }
@@ -20,14 +20,14 @@
   </style>
 </head>
 <body>
-  <h1>Mes petites choses à faire</h1>
+  <h1>Mon bloc note</h1>
   <p id="slogan" class="muted">Chaque jour, je prends le contrôle et je dépasse mes limites</p>
 
   <!-- SECTION AUTH -->
   <section id="auth" class="card">
     <h2>Se connecter / S'inscrire</h2>
     <div class="row">
-      <input id="email" type="email" placeholder="Email" required />
+      <input id="pseudo" type="pseudo" placeholder="pseudo" required />
       <input id="password" type="password" placeholder="Mot de passe" required />
     </div>
     <div class="row" style="margin-top:8px">
@@ -83,7 +83,7 @@
     el("btn-login").onclick = async () => {
       setAuthMsg("Connexion…");
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: el("email").value.trim(),
+        pseudo: el("pseudo").value.trim(),
         password: el("password").value
       });
       if (error) setAuthMsg(error.message);
@@ -93,7 +93,7 @@
     el("btn-signup").onclick = async () => {
       setAuthMsg("Création du compte…");
       const { data, error } = await supabase.auth.signUp({
-        email:el("email").value.trim(),
+        pseudo:el("pseudo").value.trim(),
         password: el("password").value
       });
       if (error) setAuthMsg(error.message);
@@ -108,7 +108,7 @@
     async function onLogin(session){
       show("auth", false);
       show("app", true);
-      el("welcome").textContent = "Bienvenue " + (session.user.email|| "👋");
+      el("welcome").textContent = "Bienvenue " + (session.user.pseudo|| "👋");
 
       // charger les tâches
       await loadTasks();
@@ -194,4 +194,4 @@
     }
   </script>
 </body>
-        </html>
+                                         </html>
