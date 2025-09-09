@@ -5,88 +5,71 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Mon bloc note</title>
   <style>
-  body{
-    background-color:White;
-    max-width:100%;
-    padding:16px;
-    margin:0 auto;
-    font-family: Arial, sans-serif;
-  }
-  h1{
-    color:Forestgreen;
-    padding:16px 0 8px;
-    text-align:center;
-    font-size:2rem;
-  }
-  h2{
-    color:green;
-    text-align:center;
-    margin:24px 0 8px;
-    text-shadow:0 2px 0 limegreen;
-    font-weight:bold;
-    font-size:1.5rem;
-  }
-  input,button{
-    padding:10px;
-    border-radius:8px;
-    border:1px solid darkseagreen;
-    margin-bottom:10px;
-    font-size:1rem;
-  }
-  input{
-    width:100%;
-    box-sizing:border-box;
-  }
-  button{
-    cursor:pointer;
-    border-color:green;
-    color:#065f46;
-    background:#ecfdf5;
-    text-align:center;
-    width:100%;
-  }
-  ul{
-    padding-left:20px;
-    list-style:disc;
-    text-align:left;
-    max-width:100%;
-  }
-  p{
-    color:black;
-    text-align:center;
-    font-size:1rem;
-    padding:0 10px;
-  }
-  .form-container{
-    width:100%;
-    max-width:400px;
-    margin:20px auto;
-    padding:20px;
-    text-align:center;
-    border-radius:10px;
-    border:1px solid #e0e0e0;
-    box-sizing:border-box;
-  }
-  .fait {
-    text-decoration: line-through;
-    color: gray;
-  }
-
-  /* Responsive */
-  @media (max-width:600px){
-    h1{ font-size:1.5rem; }
-    h2{ font-size:1.2rem; }
-    input,button{ font-size:0.9rem; }
-  }
+    body{
+      background-color:White;
+      max-width:100%;
+      padding:16px;
+      margin:0 auto;
+      font-family: Arial, sans-serif;
+    }
+    h1{
+      color:Forestgreen;
+      padding:16px 0 8px;
+      text-align:center;
+      font-size:2rem;
+    }
+    h2{
+      color:green;
+      text-align:center;
+      margin:24px 0 8px;
+      text-shadow:0 2px 0 limegreen;
+      font-weight:bold;
+      font-size:1.5rem;
+    }
+    input,button{
+      padding:10px;
+      border-radius:8px;
+      border:1px solid darkseagreen;
+      margin-bottom:10px;
+      font-size:1rem;
+    }
+    input{ width:100%; box-sizing:border-box; }
+    button{
+      cursor:pointer;
+      border-color:green;
+      color:#065f46;
+      background:#ecfdf5;
+      text-align:center;
+      width:100%;
+    }
+    ul{
+      padding-left:20px;
+      list-style:disc;
+      text-align:left;
+      max-width:100%;
+    }
+    p{ color:black; text-align:center; font-size:1rem; padding:0 10px; }
+    .form-container{
+      width:100%;
+      max-width:400px;
+      margin:20px auto;
+      padding:20px;
+      text-align:center;
+      border-radius:10px;
+      border:1px solid #e0e0e0;
+      box-sizing:border-box;
+    }
+    .fait { text-decoration: line-through; color: gray; }
   </style>
 </head>
 <body>
   <h1>Mon bloc note</h1>
   <p id="slogan">Chaque jour, je prends le contrôle et je dépasse mes limites.</p>
 
-  <!-- formulaire de connexion -->
+  <!-- formulaire pseudo -->
   <div class="form-container">
     <input id="pseudo" type="text" placeholder="Pseudo" required/>
+    <button id="btnPseudo">Valider</button>
   </div>
 
   <!-- bloc note -->
@@ -97,43 +80,104 @@
     <ul id="liste-taches"></ul>
   </div>
 
-  <script>
+  <script type="module">
+    // Import Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy 
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    // ⚠️ Remplace par la config de ton projet
+    const firebaseConfig = {
+  apiKey: "AIzaSyAGw2i_FjlugIURw2_ZVTEzkD4RwTI90wM",
+  authDomain: "mon-bloc-note.firebaseapp.com",
+  projectId: "mon-bloc-note",
+  storageBucket: "mon-bloc-note.firebasestorage.app",
+  messagingSenderId: "761151647915",
+  appId: "1:761151647915:web:0a9af0d52677509646c7ee",
+  measurementId: "G-J3K4KQFF0Y"
+}
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // DOM
+    const btnPseudo = document.getElementById("btnPseudo");
+    const pseudoInput = document.getElementById("pseudo");
     const btnAdd = document.getElementById("btnAdd");
     const inputTache = document.getElementById("inputTache");
     const liste = document.getElementById("liste-taches");
 
-    btnAdd.addEventListener("click", function() {
-      let texte = inputTache.value.trim();
+    let currentPseudo = localStorage.getItem("pseudo");
 
-      if (texte !== "") {
-        const tache = document.createElement("li");
-        tache.textContent = texte;
+    if (currentPseudo) {
+      pseudoInput.value = currentPseudo;
+      pseudoInput.disabled = true;
+      btnPseudo.disabled = true;
+      chargerTaches(currentPseudo);
+    }
 
-        // Marquer comme fait
-        tache.addEventListener("click", function() {
-          tache.classList.toggle("fait");
-        });
-
-        // Bouton supprimer
-        const btnSupprimer = document.createElement("button");
-        btnSupprimer.textContent = "❌";
-        btnSupprimer.style.marginLeft = "10px";
-
-        btnSupprimer.addEventListener("click", function(event) {
-          event.stopPropagation(); 
-          tache.remove();
-        });
-
-        tache.appendChild(btnSupprimer);
-
-        // ❌ Suppression de l'affichage immédiat
-        // liste.appendChild(tache);
-
-        inputTache.value = "";
-      } else {
-        alert("Écrire quelque chose avant d'ajouter !");
-      }
+    // Validation du pseudo
+    btnPseudo.addEventListener("click", () => {
+      const pseudo = pseudoInput.value.trim();
+      if (!pseudo) return alert("Entre un pseudo !");
+      localStorage.setItem("pseudo", pseudo);
+      currentPseudo = pseudo;
+      pseudoInput.disabled = true;
+      btnPseudo.disabled = true;
+      chargerTaches(pseudo);
     });
+
+    // Ajouter une tâche
+    btnAdd.addEventListener("click", async () => {
+      if (!currentPseudo) return alert("Choisis d'abord un pseudo !");
+      const texte = inputTache.value.trim();
+      if (!texte) return alert("Écrire quelque chose avant d'ajouter !");
+      await addDoc(collection(db, "taches"), {
+        pseudo: currentPseudo,
+        texte,
+        fait: false,
+        createdAt: new Date()
+      });
+      inputTache.value = "";
+    });
+
+    // Charger les tâches en temps réel
+    function chargerTaches(pseudo) {
+      const q = query(
+        collection(db, "taches"),
+        where("pseudo", "==", pseudo),
+        orderBy("createdAt", "desc")
+      );
+      onSnapshot(q, (snapshot) => {
+        liste.innerHTML = "";
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const li = document.createElement("li");
+          li.textContent = data.texte;
+          if (data.fait) li.classList.add("fait");
+
+          // toggle fait
+          li.addEventListener("click", async () => {
+            await updateDoc(doc(db, "taches", docSnap.id), {
+              fait: !data.fait
+            });
+          });
+
+          // bouton supprimer
+          const btnSup = document.createElement("button");
+          btnSup.textContent = "❌";
+          btnSup.style.marginLeft = "10px";
+          btnSup.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            await deleteDoc(doc(db, "taches", docSnap.id));
+          });
+
+          li.appendChild(btnSup);
+          liste.appendChild(li);
+        });
+      });
+    }
   </script>
 </body>
 </html>
