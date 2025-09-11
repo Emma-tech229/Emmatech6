@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voir mes notes</title>
+<style>
+h2{
+  color: seagreen;
+  text-align:center;
+}
+input{
+  color:black;
+  height:26px;
+  width:300px;
+}
+button{
+  color:white;
+  background: seagreen;
+  border:none;
+  padding:6px 12px;
+  border-radius:6px;
+  cursor:pointer;
+}
+button:hover{
+  background: green;
+}
+.btn-container{
+  text-align:center;
+  margin-top:10px;
+}
+ul{
+  max-width:400px;
+  margin:20px auto;
+  padding-left:20px;
+  text-align:left;
+}
+li{
+  margin-bottom:8px;
+}
+</style>
+</head>
+<body>
+
+<h2>Entre ton pseudo pour voir tes notes</h2>
+<p>
+  <input type="text" id="pseudo" placeholder="Ton pseudo"/>
+</p>
+<div class="btn-container">
+  <button id="seeMessagesBtn">Voir mes notes</button>
+</div>
+<div id="Mesnotes"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+// 🔑 Config Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAGw2i_FjlugIURw2_ZVTEzkD4RwTI90wM",
+  authDomain: "mon-bloc-note.firebaseapp.com",
+  databaseURL: "https://mon-bloc-note-default-rtdb.firebaseio.com",
+  projectId: "mon-bloc-note",
+  storageBucket: "mon-bloc-note.firebasestorage.app",
+  messagingSenderId: "761151647915",
+  appId: "1:761151647915:web:0a9af0d52677509646c7ee"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const pseudoInput = document.getElementById("pseudo");
+const btn = document.getElementById("seeMessagesBtn");
+const notesDiv = document.getElementById("Mesnotes");
+
+btn.addEventListener("click", () => {
+  const pseudo = pseudoInput.value.trim();
+  if(!pseudo) return alert("Entre un pseudo !");
+  
+  const tachesRef = ref(db, "taches/" + pseudo);
+  
+  onValue(tachesRef, (snapshot) => {
+    notesDiv.innerHTML = `<h3>Notes de ${pseudo} :</h3>`;
+    if(!snapshot.exists()){
+      notesDiv.innerHTML += "<p>Aucune note trouvée.</p>";
+      return;
+    }
+    const ul = document.createElement("ul");
+    snapshot.forEach((childSnap)=>{
+      const data = childSnap.val();
+      const li = document.createElement("li");
+      li.textContent = data.texte + (data.fait ? " ✅" : "");
+      ul.appendChild(li);
+    });
+    notesDiv.appendChild(ul);
+  });
+});
+</script>
+
+</body>
+</html>
