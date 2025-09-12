@@ -37,6 +37,7 @@ ul{
 }
 li{
   margin-bottom:8px;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -57,7 +58,7 @@ li{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-// Config Firebase
+// 🔑 Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAGw2i_FjlugIURw2_ZVTEzkD4RwTI90wM",
   authDomain: "mon-bloc-note.firebaseapp.com",
@@ -90,13 +91,8 @@ onValue(tachesRef, (snapshot)=>{
     li.textContent = tache.texte;
 
     // Afficher si la tâche est faite ou pas
-    if(tache.fait){
-      li.style.textDecoration = "line-through";
-      li.style.color = "gray";
-    } else {
-      li.style.textDecoration = "none";
-      li.style.color = "black";
-    }
+    li.style.textDecoration = tache.fait ? "line-through" : "none";
+    li.style.color = tache.fait ? "gray" : "black";
 
     // Clique/touche pour marquer comme faite
     li.addEventListener("click", ()=>{
