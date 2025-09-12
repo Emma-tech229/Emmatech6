@@ -143,32 +143,7 @@ btnAdd.addEventListener("click", ()=>{
 });
 
 
-    liste.innerHTML = "";
-    snapshot.forEach((childSnap)=>{
-      const data = childSnap.val();
-      const li = document.createElement("li");
-      li.textContent = data.texte;
-      if(data.fait) li.classList.add("fait");
-
-      // Toggle fait
-      li.addEventListener("click", ()=>{
-        update(ref(db, "taches/"+pseudo+"/"+childSnap.key), {fait: !data.fait});
-      });
-
-      // Supprimer
-      const btnSup = document.createElement("button");
-      btnSup.textContent = "❌";
-      btnSup.style.marginLeft = "10px";
-      btnSup.addEventListener("click",(e)=>{
-        e.stopPropagation();
-        remove(ref(db, "taches/"+pseudo+"/"+childSnap.key));
-      });
-
-      li.appendChild(btnSup);
-      liste.appendChild(li);
-    });
-  });
-}
+    
 </script>
 </body>
     </html>
