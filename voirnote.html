@@ -85,6 +85,13 @@ onValue(tachesRef, (snapshot)=>{
     const tache = child.val();
     const li = document.createElement("li");
     li.textContent = tache.texte;
+    if(tache.fait){
+  li.style.textDecoration = "line-through";
+  li.style.color = "gray";
+} else {
+  li.style.textDecoration = "none";
+  li.style.color = "black";
+        }
     if(tache.fait) li.style.textDecoration = "line-through";
     liste.appendChild(li);
   });
