@@ -142,10 +142,7 @@ btnAdd.addEventListener("click", ()=>{
   inputTache.value = "";
 });
 
-// Charger les tâches
-function chargerTaches(pseudo){
-  const tachesRef = ref(db, "taches/"+pseudo);
-  onValue(tachesRef, (snapshot)=>{
+
     liste.innerHTML = "";
     snapshot.forEach((childSnap)=>{
       const data = childSnap.val();
