@@ -83,52 +83,6 @@ p{ color:black; text-align:center; font-size:1rem; padding:0 10px; }
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
-
-// 🔑 Ta config Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyAGw2i_FjlugIURw2_ZVTEzkD4RwTI90wM",
-  authDomain: "mon-bloc-note.firebaseapp.com",
-  databaseURL: "https://mon-bloc-note-default-rtdb.firebaseio.com",
-  projectId: "mon-bloc-note",
-  storageBucket: "mon-bloc-note.firebasestorage.app",
-  messagingSenderId: "761151647915",
-  appId: "1:761151647915:web:0a9af0d52677509646c7ee"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// DOM
-const pseudoInput = document.getElementById("pseudo");
-const btnPseudo = document.getElementById("btnPseudo");
-const inputTache = document.getElementById("inputTache");
-const btnAdd = document.getElementById("btnAdd");
-const liste = document.getElementById("liste-taches");
-
-let currentPseudo = localStorage.getItem("pseudo");
-
-// Si pseudo déjà choisi
-if(currentPseudo){
-  pseudoInput.value = currentPseudo;
-  pseudoInput.disabled = true;
-  btnPseudo.disabled = true;
-  chargerTaches(currentPseudo);
-}
-
-// Valider pseudo
-btnPseudo.addEventListener("click", ()=>{
-  const pseudo = pseudoInput.value.trim();
-  if(!pseudo) return alert("Entre un pseudo !");
-  localStorage.setItem("pseudo", pseudo);
-  currentPseudo = pseudo;
-  pseudoInput.disabled = true;
-  btnPseudo.disabled = true;
-  chargerTaches(pseudo);
-});
-
-// Ajouter une tâche
 btnAdd.addEventListener("click", ()=>{
   if(!currentPseudo) return alert("Choisis d'abord un pseudo !");
   const texte = inputTache.value.trim();
@@ -138,28 +92,10 @@ btnAdd.addEventListener("click", ()=>{
     texte: texte,
     fait: false
   });
-  
+
   inputTache.value = "";
+  alert("Tâche ajoutée !"); // juste pour confirmer
 });
-  function chargerTaches(pseudo){
-  const tachesRef = ref(db, "taches/" + pseudo);
-
-  // Efface la liste avant de la remplir
-  liste.innerHTML = "";
-
-  // Écoute les changements en temps réel
-  onValue(tachesRef, (snapshot)=>{
-    liste.innerHTML = ""; // réinitialiser
-    snapshot.forEach((childSnapshot)=>{
-      const tache = childSnapshot.val();
-      const li = document.createElement("li");
-      li.textContent = tache.texte;
-      if(tache.fait) li.classList.add("fait");
-      liste.appendChild(li);
-    });
-  });
-  }
-
 
     
 </script>
