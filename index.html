@@ -141,6 +141,24 @@ btnAdd.addEventListener("click", ()=>{
   
   inputTache.value = "";
 });
+  function chargerTaches(pseudo){
+  const tachesRef = ref(db, "taches/" + pseudo);
+
+  // Efface la liste avant de la remplir
+  liste.innerHTML = "";
+
+  // Écoute les changements en temps réel
+  onValue(tachesRef, (snapshot)=>{
+    liste.innerHTML = ""; // réinitialiser
+    snapshot.forEach((childSnapshot)=>{
+      const tache = childSnapshot.val();
+      const li = document.createElement("li");
+      li.textContent = tache.texte;
+      if(tache.fait) li.classList.add("fait");
+      liste.appendChild(li);
+    });
+  });
+  }
 
 
     
