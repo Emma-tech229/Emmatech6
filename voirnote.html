@@ -73,6 +73,12 @@ const pseudoInput = document.getElementById("pseudo");
 const btn = document.getElementById("seeMessagesBtn");
 const notesDiv = document.getElementById("Mesnotes");
 
+// Pré-remplir le pseudo si déjà enregistré
+const storedPseudo = localStorage.getItem("pseudo");
+if(storedPseudo){
+  pseudoInput.value = storedPseudo;
+}
+
 btn.addEventListener("click", () => {
   const pseudo = pseudoInput.value.trim();
   if(!pseudo) return alert("Entre un pseudo !");
@@ -85,10 +91,6 @@ btn.addEventListener("click", () => {
       notesDiv.innerHTML += "<p>Aucune note trouvée.</p>";
       return;
     }
-    const storedPseudo = localStorage.getItem("pseudo");
-if(storedPseudo){
-  pseudoInput.value = storedPseudo;
-                                            }
     const ul = document.createElement("ul");
     snapshot.forEach((childSnap)=>{
       const data = childSnap.val();
