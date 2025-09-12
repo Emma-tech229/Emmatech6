@@ -56,7 +56,7 @@ li{
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
 // 🔑 Config Firebase
 const firebaseConfig = {
@@ -94,10 +94,16 @@ onValue(tachesRef, (snapshot)=>{
     li.style.textDecoration = tache.fait ? "line-through" : "none";
     li.style.color = tache.fait ? "gray" : "black";
 
-    // Clique/touche pour marquer comme faite
+    // Clique/touche pour marquer comme faite ou supprimer
     li.addEventListener("click", ()=>{
       if(!tache.fait){
+        // Marquer comme faite
         update(ref(db, "taches/" + pseudo + "/" + child.key), { fait: true });
+      } else {
+        // Supprimer si déjà faite
+        if(confirm("Cette tâche est déjà faite. Veux-tu la supprimer ?")){
+          remove(ref(db, "taches/" + pseudo + "/" + child.key));
+        }
       }
     });
 
