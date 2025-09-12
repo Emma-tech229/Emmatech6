@@ -55,8 +55,9 @@ li{
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
+// Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAGw2i_FjlugIURw2_ZVTEzkD4RwTI90wM",
   authDomain: "mon-bloc-note.firebaseapp.com",
@@ -73,20 +74,22 @@ const db = getDatabase(app);
 const liste = document.getElementById("liste-taches");
 const pseudo = localStorage.getItem("pseudo");
 
-if(!pseudo) {
+if(!pseudo){
   alert("Choisis d'abord un pseudo !");
   window.location.href = "index.html";
 }
 
 const tachesRef = ref(db, "taches/" + pseudo);
+
+// Lire les tâches et afficher
 onValue(tachesRef, (snapshot)=>{
-  liste.innerHTML = "";
+  liste.innerHTML = ""; // Réinitialiser la liste
   snapshot.forEach((child)=>{
     const tache = child.val();
     const li = document.createElement("li");
     li.textContent = tache.texte;
 
-    // Affiche si la tâche est faite ou pas
+    // Afficher si la tâche est faite ou pas
     if(tache.fait){
       li.style.textDecoration = "line-through";
       li.style.color = "gray";
@@ -94,6 +97,13 @@ onValue(tachesRef, (snapshot)=>{
       li.style.textDecoration = "none";
       li.style.color = "black";
     }
+
+    // Clique/touche pour marquer comme faite
+    li.addEventListener("click", ()=>{
+      if(!tache.fait){
+        update(ref(db, "taches/" + pseudo + "/" + child.key), { fait: true });
+      }
+    });
 
     liste.appendChild(li);
   });
