@@ -51,11 +51,12 @@ li{
 </div>
 <div id="Mesnotes"></div>
 
+<ul id="liste-taches"></ul>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
-// 🔑 Config Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAGw2i_FjlugIURw2_ZVTEzkD4RwTI90wM",
   authDomain: "mon-bloc-note.firebaseapp.com",
@@ -69,39 +70,25 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const pseudoInput = document.getElementById("pseudo");
-const btn = document.getElementById("seeMessagesBtn");
-const notesDiv = document.getElementById("Mesnotes");
+const liste = document.getElementById("liste-taches");
+const pseudo = localStorage.getItem("pseudo");
 
-// Pré-remplir le pseudo si déjà enregistré
-const storedPseudo = localStorage.getItem("pseudo");
-if(storedPseudo){
-  pseudoInput.value = storedPseudo;
+if(!pseudo) {
+  alert("Choisis d'abord un pseudo !");
+  window.location.href = "index.html";
 }
 
-btn.addEventListener("click", () => {
-  const pseudo = pseudoInput.value.trim();
-  if(!pseudo) return alert("Entre un pseudo !");
-  
-  const tachesRef = ref(db, "taches/" + pseudo);
-  
-  onValue(tachesRef, (snapshot) => {
-    notesDiv.innerHTML = `<h3>Notes de ${pseudo} :</h3>`;
-    if(!snapshot.exists()){
-      notesDiv.innerHTML += "<p>Aucune note trouvée.</p>";
-      return;
-    }
-    const ul = document.createElement("ul");
-    snapshot.forEach((childSnap)=>{
-      const data = childSnap.val();
-      const li = document.createElement("li");
-      li.textContent = data.texte + (data.fait ? " ✅" : "");
-      ul.appendChild(li);
-    });
-    notesDiv.appendChild(ul);
+const tachesRef = ref(db, "taches/" + pseudo);
+onValue(tachesRef, (snapshot)=>{
+  liste.innerHTML = "";
+  snapshot.forEach((child)=>{
+    const tache = child.val();
+    const li = document.createElement("li");
+    li.textContent = tache.texte;
+    if(tache.fait) li.style.textDecoration = "line-through";
+    liste.appendChild(li);
   });
 });
 </script>
-
 </body>
 </html>
