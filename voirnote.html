@@ -85,6 +85,10 @@ btn.addEventListener("click", () => {
       notesDiv.innerHTML += "<p>Aucune note trouvée.</p>";
       return;
     }
+    const storedPseudo = localStorage.getItem("pseudo");
+if(storedPseudo){
+  pseudoInput.value = storedPseudo;
+                                            }
     const ul = document.createElement("ul");
     snapshot.forEach((childSnap)=>{
       const data = childSnap.val();
