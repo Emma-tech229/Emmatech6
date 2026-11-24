@@ -1,0 +1,97 @@
+rules_version = '2';
+
+/* Regles Firestore de BeniGo.
+   A publier dans la console Firebase : Firestore Database > Regles.
+   Elles portent les regles metier du sequestre : seul le vendeur expedie,
+   seul l acheteur confirme la reception, les tiers ne voient rien. */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    /* Profils : le nom et le telephone sont visibles pour les membres connectes
+       (ils servent a joindre l autre partie pendant une livraison). */
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if isSelf(uid)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.phone is string
+        && request.resource.data.phone.size() >= 8;
+      allow update: if isSelf(uid);
+      allow delete: if isSelf(uid);
+    }
+
+    match /listings/{listingId} {
+      allow read: if true;
+
+      allow create: if signedIn()
+        && request.resource.data.sellerId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 4
+        && request.resource.data.price is int
+        && request.resource.data.price >= 100
+        && request.resource.data.status == 'active'
+        && request.resource.data.images is list
+        && request.resource.data.images.size() <= 4;
+
+      /* Le vendeur modifie ou retire son annonce. */
+      allow update, delete: if isSelf(resource.data.sellerId);
+
+      /* Un acheteur peut seulement reserver une annonce encore disponible. */
+      allow update: if signedIn()
+        && resource.data.status == 'active'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status == 'reservee';
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 2
+          && request.resource.data.text.size() <= 400;
+        allow update, delete: if false;
+      }
+    }
+
+    /* Commandes : visibles par l acheteur et le vendeur seulement. */
+    match /orders/{ref} {
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+
+      allow create: if signedIn()
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.sellerId != request.auth.uid
+        && request.resource.data.members == [request.resource.data.buyerId, request.resource.data.sellerId]
+        && request.resource.data.status == 'sequestre'
+        && request.resource.data.price is int
+        && request.resource.data.price >= 100;
+
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.members
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'history', 'updatedAt'])
+        && (
+          (request.auth.uid == resource.data.sellerId
+            && resource.data.status == 'sequestre'
+            && request.resource.data.status == 'expediee')
+          ||
+          (request.auth.uid == resource.data.buyerId
+            && resource.data.status in ['sequestre', 'expediee']
+            && request.resource.data.status == 'terminee')
+        );
+
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

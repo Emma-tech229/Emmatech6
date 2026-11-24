@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="vert">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annonce - BeniGo</title>
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/annonce.css">
+<script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html">Beni<span>Go</span></a>
+    <nav class="nav">
+      <a href="annonces.html">Annonces</a>
+      <a href="publier.html">Vendre</a>
+      <a href="profil.html" id="navAccount">Mon profil</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap detail" id="detail">
+  <p class="alert error" id="notFound" hidden>Cette annonce n'existe pas ou a ete retiree.</p>
+
+  <div class="detail-grid" id="detailGrid" hidden>
+    <section class="gallery">
+      <div class="gallery-main" id="galleryMain"></div>
+      <div class="gallery-thumbs" id="galleryThumbs"></div>
+    </section>
+
+    <section class="info card">
+      <span class="badge" id="condition"></span>
+      <h1 id="title"></h1>
+      <p class="detail-price" id="price"></p>
+      <p class="muted small" id="meta"></p>
+
+      <div class="escrow-note">
+        <p class="small"><strong>Paiement sequestre.</strong> Le montant est bloque par BeniGo
+        et reverse au vendeur apres confirmation de reception.</p>
+      </div>
+
+      <button class="btn block" id="buyBtn" type="button">Acheter avec paiement sequestre</button>
+      <a class="btn ghost block" id="loginBtn" href="connexion.html" hidden>Se connecter pour acheter</a>
+      <p class="small muted seller-note" id="sellerNote" hidden>Vous etes le vendeur de cet article.</p>
+      <p class="small muted seller-note" id="reservedNote" hidden>Cet article est deja reserve par un acheteur.</p>
+    </section>
+  </div>
+
+  <section class="description card" id="descriptionCard" hidden>
+    <h2>Description</h2>
+    <p class="pre" id="description"></p>
+  </section>
+
+  <section class="comments card" id="commentsCard" hidden>
+    <h2>Commentaires</h2>
+    <div id="commentList"></div>
+
+    <form id="commentForm" class="comment-form" novalidate>
+      <label class="field">
+        <span>Poser une question ou laisser un avis</span>
+        <textarea id="commentText" maxlength="400" placeholder="Exemple : est-ce que le chargeur est fourni ?" required></textarea>
+      </label>
+      <p class="alert error" id="commentError" hidden></p>
+      <button class="btn" type="submit">Envoyer</button>
+    </form>
+
+    <p class="small muted" id="commentLogin" hidden>
+      <a href="connexion.html">Connectez-vous</a> pour commenter cette annonce.
+    </p>
+  </section>
+</main>
+
+<script type="module" src="js/annonce.js"></script>
+</body>
+</html>

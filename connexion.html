@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="vert">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion - BeniGo</title>
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/connexion.css">
+<script src="js/theme.js"></script>
+</head>
+<body class="auth-page">
+
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html">Beni<span>Go</span></a>
+    <nav class="nav">
+      <a href="annonces.html">Annonces</a>
+      <a href="inscription.html">Creer un compte</a>
+    </nav>
+  </div>
+</header>
+
+<main class="auth-wrap">
+  <section class="auth-card card">
+    <h1>Se connecter</h1>
+    <p class="muted small">Entrez votre adresse email et votre mot de passe.</p>
+
+    <p class="alert error" id="formError" hidden></p>
+
+    <form id="loginForm" novalidate>
+      <label class="field">
+        <span>Adresse email</span>
+        <input type="email" id="identifier" autocomplete="username" placeholder="vous@exemple.com" required>
+      </label>
+
+      <label class="field">
+        <span>Mot de passe</span>
+        <input type="password" id="password" autocomplete="current-password" placeholder="Votre mot de passe" required>
+      </label>
+
+      <button class="btn block" type="submit">Se connecter</button>
+    </form>
+
+    <p class="small muted footnote" id="lastAccount" hidden></p>
+    <p class="small">Pas encore de compte ? <a href="inscription.html">Creer un compte</a></p>
+  </section>
+
+  <aside class="auth-side">
+    <h2>Le sequestre en une phrase</h2>
+    <p class="small">
+      L'acheteur paie BeniGo, pas le vendeur. L'argent ne part vers le vendeur que lorsque
+      l'acheteur confirme avoir recu son article avec le code de remise.
+    </p>
+    <p class="small muted">
+      Les comptes sont geres par Firebase Authentication, pas par le navigateur.
+      Le mot de passe n'est jamais stocke en clair et la session reste attachee a cet appareil.
+    </p>
+  </aside>
+</main>
+
+<script type="module" src="js/connexion.js"></script>
+</body>
+</html>

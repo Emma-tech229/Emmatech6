@@ -1,144 +1,133 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="vert">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mon bloc note</title>
-<style>
-body{
-  background-color:White;
-  max-width:100%;
-  padding:16px;
-  margin:0 auto;
-  font-family: Arial, sans-serif;
-}
-h1{
-  color:Forestgreen;
-  padding:16px 0 8px;
-  text-align:center;
-  font-size:2rem;
-}
-h2{
-  color:green;
-  text-align:center;
-  margin:24px 0 8px;
-  text-shadow:0 2px 0 limegreen;
-  font-weight:bold;
-  font-size:1.5rem;
-}
-input,button{
-  padding:10px;
-  border-radius:8px;
-  border:1px solid darkseagreen;
-  margin-bottom:10px;
-  font-size:1rem;
-}
-input{ width:100%; box-sizing:border-box; }
-button{
-  cursor:pointer;
-  border-color:green;
-  color:#065f46;
-  background:#ecfdf5;
-  text-align:center;
-  width:100%;
-}
-ul{
-  padding-left:20px;
-  list-style:disc;
-  text-align:left;
-  max-width:100%;
-}
-p{ color:black; text-align:center; font-size:1rem; padding:0 10px; }
-.form-container{
-  width:100%;
-  max-width:400px;
-  margin:20px auto;
-  padding:20px;
-  text-align:center;
-  border-radius:10px;
-  border:1px solid #e0e0e0;
-  box-sizing:border-box;
-}
-.fait { text-decoration: line-through; color: gray; }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BeniGo - achetez et revendez en confiance</title>
+<meta name="description" content="BeniGo, l'application beninoise pour revendre les objets que vous n'utilisez plus et acheter aupres de particuliers, avec paiement sequestre et livraison maitrisee.">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/index.css">
+<script src="js/theme.js"></script>
 </head>
 <body>
-<h1>Mon bloc note</h1>
-  <p id="slogan">Chaque jour, je prends le contrôle et je dépasse mes limites.</p>
 
-<!-- formulaire pseudo -->
-<div class="form-container">
-  <input id="pseudo" type="text" placeholder="Pseudo" required/>
-  <button id="btnPseudo">Valider</button>
-</div>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html">Beni<span>Go</span></a>
+    <nav class="nav" id="nav">
+      <a href="annonces.html">Annonces</a>
+      <a href="publier.html">Vendre</a>
+      <a href="connexion.html" id="navAccount">Connexion</a>
+      <a class="btn" href="inscription.html" id="navCta">Creer mon compte</a>
+    </nav>
+  </div>
+</header>
 
-<!-- bloc note -->
-<div class="form-container">
-  <h2>Mes tâches</h2>
-  
-  <h3> <a href="voirnote.html">Voir mes notes</a></h3>
-  <input id="inputTache" type="text" placeholder="Nouvelle tâche"/>
-  <button id="btnAdd">Ajouter</button>
-  <ul id="liste-taches"></ul>
-</div>
+<main>
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <span class="badge">Cotonou, Abomey-Calavi, Porto-Novo</span>
+        <h1>Vendez ce que vous n'utilisez plus. Achetez sans vous faire avoir.</h1>
+        <p class="muted hero-text">
+          BeniGo met en relation les particuliers du Benin. L'argent de l'achat est garde
+          par la plateforme et n'est remis au vendeur qu'apres la confirmation de reception
+          du colis. La livraison est assuree par nos points relais ou par notre propre livreur.
+        </p>
+        <div class="row">
+          <a class="btn" href="inscription.html">Commencer maintenant</a>
+          <a class="btn ghost" href="annonces.html">Voir les annonces</a>
+        </div>
+        <p class="small muted hero-note">
+          Inscription gratuite. Aucun frais sur vos premieres ventes.
+        </p>
+      </div>
+      <div class="hero-panel card">
+        <p class="panel-label">Ce que BeniGo garantit</p>
+        <ul class="check-list">
+          <li>L'acheteur ne perd pas son argent si le colis n'arrive pas.</li>
+          <li>Le vendeur est paye des que la reception est confirmee.</li>
+          <li>Un code de remise unique valide chaque livraison.</li>
+          <li>Chaque annonce et chaque vendeur sont commentables.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+  <section class="section">
+    <div class="wrap">
+      <h2>Comment ca marche</h2>
+      <div class="grid cols-4 steps">
+        <article class="card flat">
+          <span class="step-num">1</span>
+          <h3>Publiez votre article</h3>
+          <p class="muted small">Photos, description, prix, etat et lieu. Votre annonce est visible tout de suite.</p>
+        </article>
+        <article class="card flat">
+          <span class="step-num">2</span>
+          <h3>L'acheteur paie</h3>
+          <p class="muted small">Le montant est bloque par BeniGo. Le vendeur voit la commande et prepare le colis.</p>
+        </article>
+        <article class="card flat">
+          <span class="step-num">3</span>
+          <h3>La livraison est tracee</h3>
+          <p class="muted small">Point relais ou livreur BeniGo. Un code de remise est presente a la reception.</p>
+        </article>
+        <article class="card flat">
+          <span class="step-num">4</span>
+          <h3>Le vendeur est paye</h3>
+          <p class="muted small">Apres confirmation de reception, BeniGo libere les fonds. Chacun laisse un commentaire.</p>
+        </article>
+      </div>
+    </div>
+  </section>
 
-// Config Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyAGw2i_FjlugIURw2_ZVTEzkD4RwTI90wM",
-  authDomain: "mon-bloc-note.firebaseapp.com",
-  databaseURL: "https://mon-bloc-note-default-rtdb.firebaseio.com",
-  projectId: "mon-bloc-note",
-  storageBucket: "mon-bloc-note.firebasestorage.app",
-  messagingSenderId: "761151647915",
-  appId: "1:761151647915:web:0a9af0d52677509646c7ee"
-};
+  <section class="section">
+    <div class="wrap grid cols-3">
+      <article class="card flat">
+        <h3>Paiement sequestre</h3>
+        <p class="muted small">
+          L'argent passe d'abord par BeniGo. Un vendeur ne peut pas encaisser sans que
+          l'article soit remis, et un acheteur ne peut pas partir avec le colis sans payer.
+        </p>
+      </article>
+      <article class="card flat">
+        <h3>Deux modes de livraison</h3>
+        <p class="muted small">
+          Deposer ou retirer dans un point relais, ou demander le passage d'un livreur
+          BeniGo a votre adresse pour les articles volumineux.
+        </p>
+      </article>
+      <article class="card flat">
+        <h3>Compatibilite totale</h3>
+        <p class="muted small">
+          L'interface fonctionne sur n'importe quel telephone Android, y compris les
+          modeles d'entree de gamme et les ecrans etroits.
+        </p>
+      </article>
+    </div>
+  </section>
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+  <section class="section">
+    <div class="wrap">
+      <div class="cta card">
+        <div>
+          <h2>Un objet dort chez vous, il peut servir a quelqu'un d'autre.</h2>
+          <p class="muted small">Creer un compte prend moins d'une minute.</p>
+        </div>
+        <a class="btn" href="inscription.html">Creer mon compte</a>
+      </div>
+    </div>
+  </section>
+</main>
 
-// DOM
-const pseudoInput = document.getElementById("pseudo");
-const btnPseudo = document.getElementById("btnPseudo");
-const inputTache = document.getElementById("inputTache");
-const btnAdd = document.getElementById("btnAdd");
+<footer class="site-footer">
+  <div class="wrap spread">
+    <p class="small">BeniGo, plateforme de revente entre particuliers au Benin.</p>
+    <p class="small">Paiement sequestre et livraison maitrisee</p>
+  </div>
+</footer>
 
-let currentPseudo = localStorage.getItem("pseudo");
-
-// Si pseudo déjà choisi
-if(currentPseudo){
-  pseudoInput.value = currentPseudo;
-  pseudoInput.disabled = true;
-  btnPseudo.disabled = true;
-}
-
-// Valider pseudo
-btnPseudo.addEventListener("click", ()=>{
-  const pseudo = pseudoInput.value.trim();
-  if(!pseudo) return alert("Entre un pseudo !");
-  localStorage.setItem("pseudo", pseudo);
-  currentPseudo = pseudo;
-  pseudoInput.disabled = true;
-  btnPseudo.disabled = true;
-});
-
-// Ajouter une tâche
-btnAdd.addEventListener("click", ()=>{
-  if(!currentPseudo) return alert("Choisis d'abord un pseudo !");
-  const texte = inputTache.value.trim();
-  if(!texte) return alert("Écrire quelque chose avant d'ajouter !");
-  
-  push(ref(db, "taches/"+currentPseudo), {
-    texte: texte,
-    fait: false
-  });
-
-  inputTache.value = "";
-  alert("Tâche ajoutée !");
-});
-    </script>
+<script type="module" src="js/index.js"></script>
 </body>
-    </html>
+</html>

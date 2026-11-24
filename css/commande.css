@@ -1,0 +1,87 @@
+.order { padding-top: 26px; padding-bottom: 40px; max-width: 940px; }
+.order-head { margin-bottom: 16px; }
+.order-head h1 { font-size: 1.45rem; margin-bottom: 2px; }
+.order-head .badge { font-size: .78rem; }
+
+.order-grid {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 18px;
+  align-items: start;
+}
+.order-grid h2 { font-size: 1rem; }
+
+.timeline { list-style: none; margin: 6px 0 18px; padding: 0; }
+.timeline li {
+  position: relative;
+  padding: 0 0 18px 26px;
+  font-size: .92rem;
+}
+.timeline li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+}
+.timeline li::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 18px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.timeline li:last-child::after { display: none; }
+.timeline li.done::before { border-color: var(--accent); background: var(--accent); }
+.timeline li.current::before { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }
+.timeline .label { font-weight: 600; display: block; }
+.timeline .when { color: var(--muted); font-size: .8rem; }
+.timeline .pending { color: var(--muted); }
+
+.actions { display: grid; gap: 8px; }
+.actions .btn { width: 100%; }
+
+.handoff { text-align: center; }
+.qr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 168px;
+  min-height: 168px;
+  margin: 10px auto;
+  padding: 10px;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.qr img, .qr canvas { display: block; }
+
+.code {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  margin: 6px 0 4px;
+  color: var(--accent);
+}
+
+.order-recap { margin-top: 18px; }
+.recap-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-size: .9rem;
+}
+.recap-row:first-of-type { border-top: 0; }
+.recap-row span { color: var(--muted); }
+
+@media (max-width: 780px) {
+  .order-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="vert">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Publier une annonce - BeniGo</title>
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/publier.css">
+<script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html">Beni<span>Go</span></a>
+    <nav class="nav">
+      <a href="annonces.html">Annonces</a>
+      <a href="publier.html" class="active">Vendre</a>
+      <a href="profil.html">Mon profil</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap publish">
+  <h1>Publier un article</h1>
+  <p class="muted small">Une annonce claire se vend plus vite. Les photos sont redimensionnees automatiquement pour rester legeres.</p>
+
+  <p class="alert error" id="formError" hidden></p>
+  <p class="alert" id="formSuccess" hidden></p>
+
+  <form id="listingForm" class="card" novalidate>
+    <div class="grid cols-2">
+      <label class="field">
+        <span>Titre de l'annonce</span>
+        <input type="text" id="title" maxlength="80" placeholder="Exemple : Samsung A24 128 Go, tres bon etat" required>
+      </label>
+
+      <label class="field">
+        <span>Prix en FCFA</span>
+        <input type="number" id="price" min="100" step="50" inputmode="numeric" placeholder="45000" required>
+      </label>
+
+      <label class="field">
+        <span>Categorie</span>
+        <select id="category">
+          <option>Telephones</option>
+          <option>Informatique</option>
+          <option>Maison</option>
+          <option>Vetements</option>
+          <option>Vehicules</option>
+          <option>Autres</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Etat de l'article</span>
+        <select id="condition">
+          <option>Neuf</option>
+          <option>Comme neuf</option>
+          <option>Bon etat</option>
+          <option>Usage</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Ville ou quartier</span>
+        <input type="text" id="place" maxlength="60" placeholder="Exemple : Akpakpa, Cotonou" required>
+      </label>
+
+      <label class="field">
+        <span>Photos (4 maximum)</span>
+        <input type="file" id="photos" accept="image/*" multiple>
+        <small class="hint">La premiere photo sert de couverture dans la liste des annonces.</small>
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Description</span>
+      <textarea id="description" maxlength="900" placeholder="Decrivez l'article : defauts, accessoires fournis, raison de la vente, disponibilite pour la remise..." required></textarea>
+    </label>
+
+    <div class="previews" id="previews"></div>
+
+    <div class="row">
+      <button class="btn" type="submit" id="submitBtn">Publier l'annonce</button>
+      <a class="btn ghost" href="annonces.html">Annuler</a>
+    </div>
+  </form>
+</main>
+
+<script type="module" src="js/publier.js"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="vert">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon profil - BeniGo</title>
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/profil.css">
+<script src="js/theme.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html">Beni<span>Go</span></a>
+    <nav class="nav">
+      <a href="annonces.html">Annonces</a>
+      <a href="publier.html">Vendre</a>
+      <a href="profil.html" class="active">Mon profil</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap profile">
+  <section class="card account">
+    <div>
+      <h1 id="userName"></h1>
+      <p class="muted small" id="userContact"></p>
+    </div>
+    <button class="btn ghost" id="logoutBtn" type="button">Se deconnecter</button>
+  </section>
+
+  <section class="card">
+    <h2>Apparence</h2>
+    <p class="small muted">Choisissez la couleur de l'application. Le choix est garde sur cet appareil.</p>
+    <div class="themes" id="themes"></div>
+  </section>
+
+  <section class="card">
+    <div class="spread">
+      <h2>Mes annonces</h2>
+      <a class="btn" href="publier.html">Publier</a>
+    </div>
+    <div id="myListings"></div>
+  </section>
+
+  <section class="card">
+    <h2>Mes achats</h2>
+    <div id="myPurchases"></div>
+  </section>
+
+  <section class="card">
+    <h2>Mes ventes</h2>
+    <div id="mySales"></div>
+  </section>
+</main>
+
+<script type="module" src="js/profil.js"></script>
+</body>
+</html>

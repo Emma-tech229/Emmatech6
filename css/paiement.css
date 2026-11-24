@@ -1,0 +1,79 @@
+.checkout { padding-top: 26px; padding-bottom: 40px; max-width: 960px; }
+.checkout h1 { font-size: 1.5rem; margin-bottom: 4px; }
+
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1.25fr .85fr;
+  gap: 20px;
+  align-items: start;
+  margin-top: 18px;
+}
+.checkout-grid form { padding: 20px; }
+.checkout-grid h2 { font-size: 1rem; margin: 4px 0 12px; }
+.checkout-grid form h2 + .choices { margin-bottom: 16px; }
+
+.choices { display: grid; gap: 8px; }
+.choices + h2 { margin-top: 20px; }
+
+.choice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px;
+  cursor: pointer;
+  background: var(--surface);
+}
+.choice:hover { border-color: var(--accent); }
+.choice input { margin-top: 3px; accent-color: var(--accent); }
+.choice strong { display: block; font-size: .93rem; }
+.choice em { font-style: normal; color: var(--muted); font-size: .83rem; }
+
+.pay-methods { display: grid; gap: 8px; margin-bottom: 14px; }
+.note { margin-bottom: 16px; }
+
+.summary { padding: 20px; position: sticky; top: 76px; }
+.summary h2 { font-size: 1rem; }
+.summary-item { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+.summary-item .thumb {
+  width: 62px;
+  height: 62px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.summary-item .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.summary-title { margin: 0; font-weight: 600; font-size: .92rem; }
+
+.lines { margin: 0 0 12px; }
+.lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+  font-size: .88rem;
+}
+.lines dt { color: var(--muted); margin: 0; }
+.lines dd { margin: 0; font-weight: 600; }
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  border-top: 2px solid var(--accent);
+  padding-top: 11px;
+  margin-bottom: 14px;
+}
+.total strong { font-size: 1.2rem; color: var(--accent); }
+
+.protect { background: var(--accent-soft); border-radius: var(--radius-sm); padding: 11px 12px; }
+.protect p { margin: 0; }
+
+@media (max-width: 880px) {
+  .checkout-grid { grid-template-columns: 1fr; }
+  .summary { position: static; }
+}

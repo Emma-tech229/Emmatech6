@@ -1,0 +1,20 @@
+rules_version = '2';
+
+/* Regles Cloud Storage de BeniGo.
+   A publier dans la console Firebase : Storage > Regles. */
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /listings/{uid}/{file} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

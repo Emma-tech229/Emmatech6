@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="vert">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creer mon compte - BeniGo</title>
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/inscription.css">
+<script src="js/theme.js"></script>
+</head>
+<body class="auth-page">
+
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html">Beni<span>Go</span></a>
+    <nav class="nav">
+      <a href="annonces.html">Annonces</a>
+      <a href="connexion.html">J'ai deja un compte</a>
+    </nav>
+  </div>
+</header>
+
+<main class="auth-wrap">
+  <section class="auth-card card">
+    <h1>Creer mon compte</h1>
+    <p class="muted small">Quelques informations suffisent. Elles servent a securiser les livraisons et les paiements.</p>
+
+    <p class="alert error" id="formError" hidden></p>
+
+    <form id="signupForm" novalidate>
+      <label class="field">
+        <span>Nom complet</span>
+        <input type="text" name="name" id="name" autocomplete="name" placeholder="Exemple : Awa Dossou" required>
+      </label>
+
+      <label class="field">
+        <span>Adresse email</span>
+        <input type="email" name="email" id="email" autocomplete="email" placeholder="vous@exemple.com" required>
+      </label>
+
+      <label class="field">
+        <span>Numero de telephone</span>
+        <input type="tel" name="phone" id="phone" inputmode="numeric" autocomplete="tel" placeholder="97 00 00 00" required>
+        <small class="hint">Numero beninois a 8 chiffres. Il sert a joindre l'acheteur ou le vendeur pendant la livraison.</small>
+      </label>
+
+      <label class="field">
+        <span>Mot de passe</span>
+        <input type="password" name="password" id="password" autocomplete="new-password" placeholder="6 caracteres minimum" required>
+      </label>
+
+      <label class="field">
+        <span>Confirmer le mot de passe</span>
+        <input type="password" name="confirm" id="confirm" autocomplete="new-password" placeholder="Retapez le mot de passe" required>
+      </label>
+
+      <button class="btn block" type="submit">Creer mon compte</button>
+    </form>
+
+    <p class="small muted footnote">
+      En creant un compte, vous acceptez que BeniGo conserve l'argent de chaque commande
+      jusqu'a la confirmation de reception de l'article.
+    </p>
+    <p class="small">Deja inscrit ? <a href="connexion.html">Se connecter</a></p>
+  </section>
+
+  <aside class="auth-side">
+    <h2>Pourquoi un compte BeniGo</h2>
+    <ul class="check-list">
+      <li>Vos annonces restent visibles et modifiables.</li>
+      <li>Vous suivez chaque commande, du paiement a la remise.</li>
+      <li>Le vendeur ne recoit l'argent qu'apres votre confirmation.</li>
+    </ul>
+    <p class="small muted">Le compte est gratuit. Aucune commission n'est prelevee au lancement.</p>
+  </aside>
+</main>
+
+<script type="module" src="js/inscription.js"></script>
+</body>
+</html>
