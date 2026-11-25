@@ -59,6 +59,13 @@ await rejects('mot de passe court refuse', () => BeniGo.signup({ name: 'Autre', 
 ok('profil courant', (await BeniGo.me()).email === 'koffi@benigo.bj');
 ok('telephone conserve', (await BeniGo.me()).phone === '97000002');
 
+await rejects(
+  'telephone deja utilise refuse',
+  () => BeniGo.signup({ name: 'Autre', email: 'z@benigo.bj', phone: '97000002', password: 'secret1' }),
+  'numero de telephone'
+);
+ok('inscription refusee laisse deconnecte', (await BeniGo.me()) === null);
+
 await BeniGo.logout();
 ok('deconnexion', (await BeniGo.me()) === null);
 await rejects('mot de passe incorrect refuse', () => BeniGo.login('awa@benigo.bj', 'nope'), 'incorrect');

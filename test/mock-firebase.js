@@ -70,6 +70,16 @@ export async function updateProfile(user, data) {
   if (data && data.displayName) user.displayName = data.displayName;
 }
 
+export async function deleteUser(user) {
+  for (const [email, record] of accounts.entries()) {
+    if (record.user.uid === user.uid) accounts.delete(email);
+  }
+  if (authUser && authUser.uid === user.uid) {
+    authUser = null;
+    notify();
+  }
+}
+
 export function getFirestore() {
   return { kind: 'firestore' };
 }

@@ -12,6 +12,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
+  deleteUser,
   getFirestore,
   collection,
   doc,
@@ -206,9 +207,6 @@ export async function signup(data) {
   if (phone.length < 8) throw new Error('Numero de telephone invalide (8 chiffres).');
   if (password.length < 6) throw new Error('Le mot de passe doit faire au moins 6 caracteres.');
 
-  const taken = await getDocs(query(collection(db, 'users'), where('phone', '==', phone)));
-  if (!taken.empty) throw new Error('Un compte existe deja avec ce numero de telephone.');
-
   let credential;
   try {
     credential = await createUserWithEmailAndPassword(auth, email, password);
@@ -217,6 +215,25 @@ export async function signup(data) {
   }
 
   const user = credential.user;
+
+  /* Les regles Firestore n ouvrent la lecture de users qu aux membres connectes :
+     le controle du numero de telephone se fait donc juste apres la creation du
+     compte. Si le numero est deja pris, le compte tout juste cree est supprime
+     pour ne pas laisser un doublon ni une session ouverte. */
+  let phoneTaken = false;
+  try {
+    const taken = await getDocs(query(collection(db, 'users'), where('phone', '==', phone)));
+    phoneTaken = !taken.empty;
+  } catch (error) {
+    phoneTaken = false;
+  }
+
+  if (phoneTaken) {
+    await deleteUser(user).catch(function () {});
+    authUser = null;
+    profile = null;
+    throw new Error('Un compte existe deja avec ce numero de telephone.');
+  }
   const record = {
     name: name,
     email: email,

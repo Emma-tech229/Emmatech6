@@ -10,7 +10,8 @@ export {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  updateProfile
+  updateProfile,
+  deleteUser
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
 
 export {
