@@ -40,9 +40,9 @@ export const RELAYS = [
 ];
 
 export const STATUS_LABELS = {
-  sequestre: 'Fonds sequestres',
-  expediee: 'Article en cours de livraison',
-  terminee: 'Reception confirmee, vendeur paye'
+  commande: 'Commande enregistree, paiement a la remise',
+  expediee: 'Article remis a la livraison',
+  terminee: 'Article recu, paiement regle'
 };
 
 const CONFIG_ERROR = 'Firebase n est pas configure : renseignez js/firebase-config.js avec les cles de votre projet.';
@@ -160,6 +160,7 @@ function orderFromDoc(snapshot) {
     delivery: data.delivery,
     relay: data.relay || '',
     address: data.address || '',
+    phone: data.phone || '',
     code: data.code,
     status: data.status,
     history: data.history || [],
@@ -405,43 +406,48 @@ export async function addComment(listingId, text) {
   return { id: created.id, ...record };
 }
 
-/* --- commandes et sequestre --- */
+/* --- commandes ---
+   BeniGo ne detient jamais l argent des achats : la commande reserve l annonce
+   et fixe le mode de remise, puis le paiement se fait en especes ou par mobile
+   money au moment de la remise, directement au vendeur ou au livreur. */
 
 function orderRef() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let out = '';
-  for (let i = 0; i < 6; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
-  return 'BG-' + out;
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let ref = '';
+  for (let i = 0; i < 6; i += 1) ref += alphabet[Math.floor(Math.random() * alphabet.length)];
+  return 'BG-' + ref;
 }
 
 function handoffCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let out = '';
-  for (let i = 0; i < 6; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
-  return out;
+  let code = '';
+  for (let i = 0; i < 6; i += 1) code += String(Math.floor(Math.random() * 10));
+  return code;
 }
 
+/* Cree la commande et reserve l annonce dans une seule transaction. */
 export async function createOrder(data) {
   assertConfigured();
   const user = await me();
-  if (!user) throw new Error('Connectez-vous pour payer.');
+  if (!user) throw new Error('Connectez-vous pour commander.');
 
-  const delivery = data.delivery === 'livreur' ? 'livreur' : 'relais';
-  if (delivery === 'relais' && !String(data.relay || '').trim()) throw new Error('Choisissez un point relais.');
-  if (delivery === 'livreur' && String(data.address || '').trim().length < 6) {
-    throw new Error('Indiquez une adresse de livraison.');
-  }
+  const listingId = String((data && data.listingId) || '');
+  const delivery = data && data.delivery === 'livreur' ? 'livreur' : 'relais';
+  const relay = delivery === 'relais' ? String((data && data.relay) || '') : '';
+  const address = delivery === 'livreur' ? String((data && data.address) || '').trim() : '';
+  const phone = String((data && data.phone) || user.phone || '');
 
-  const listingDoc = doc(db, 'listings', data.listingId);
-  const created = await runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(listingDoc);
+  const target = doc(db, 'listings', listingId);
+  return runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(target);
     if (!snapshot.exists()) throw new Error('Annonce introuvable.');
     const item = listingFromDoc(snapshot);
-    if (item.sellerId === user.id) throw new Error('Vous ne pouvez pas acheter votre propre annonce.');
-    if (item.status !== 'active') throw new Error('Cet article est deja reserve.');
+    if (item.sellerId === user.id) throw new Error('Vous ne pouvez pas commander votre propre annonce.');
+    if (item.status !== 'active') throw new Error('Cet article est deja reserve par un autre acheteur.');
+    if (delivery === 'livreur' && address.length < 6) throw new Error('Indiquez une adresse de livraison.');
 
+    const now = Date.now();
     const ref = orderRef();
-    const order = {
+    const record = {
       listingId: item.id,
       listingTitle: item.title,
       listingImage: (item.images && item.images[0]) || '',
@@ -451,22 +457,20 @@ export async function createOrder(data) {
       sellerName: item.sellerName,
       price: item.price,
       delivery: delivery,
-      relay: delivery === 'relais' ? String(data.relay).trim() : '',
-      address: delivery === 'livreur' ? String(data.address).trim() : '',
+      relay: relay,
+      address: address,
+      phone: phone,
       code: handoffCode(),
-      status: 'sequestre',
+      status: 'commande',
       members: [user.id, item.sellerId],
-      history: [{ status: 'sequestre', at: Date.now() }],
-      createdAt: Date.now(),
-      updatedAt: Date.now()
+      history: [{ status: 'commande', at: now }],
+      createdAt: now,
+      updatedAt: now
     };
-
-    transaction.set(doc(db, 'orders', ref), order);
-    transaction.update(listingDoc, { status: 'reservee' });
-    return { ref, ...order };
+    transaction.set(doc(db, 'orders', ref), record);
+    transaction.update(target, { status: 'reservee' });
+    return { ref: ref, ...record };
   });
-
-  return created;
 }
 
 export async function order(ref) {
@@ -502,8 +506,8 @@ async function transition(ref, next) {
     const data = orderFromDoc(snapshot);
 
     if (next === 'expediee') {
-      if (data.sellerId !== user.id) throw new Error('Seul le vendeur peut marquer l envoi.');
-      if (data.status !== 'sequestre') throw new Error('Cette commande ne peut plus etre expediee.');
+      if (data.sellerId !== user.id) throw new Error('Seul le vendeur peut marquer la remise.');
+      if (data.status !== 'commande') throw new Error('Cette commande ne peut plus etre expediee.');
     } else {
       if (data.buyerId !== user.id) throw new Error('Seul l acheteur peut confirmer la reception.');
       if (data.status === 'terminee') throw new Error('Reception deja confirmee.');

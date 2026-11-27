@@ -2,8 +2,9 @@ rules_version = '2';
 
 /* Regles Firestore de BeniGo.
    A publier dans la console Firebase : Firestore Database > Regles.
-   Elles portent les regles metier du sequestre : seul le vendeur expedie,
-   seul l acheteur confirme la reception, les tiers ne voient rien. */
+   Elles portent les regles metier de la commande : seul l acheteur commande,
+   seul le vendeur remet le colis, seul l acheteur confirme la reception, et
+   les tiers ne voient rien. Aucun paiement ne transite par la plateforme. */
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -45,7 +46,8 @@ service cloud.firestore {
       /* Le vendeur modifie ou retire son annonce. */
       allow update, delete: if isSelf(resource.data.sellerId);
 
-      /* Un acheteur peut seulement reserver une annonce encore disponible. */
+      /* Un acheteur peut seulement reserver une annonce encore active, en
+         changeant son statut : la reservation accompagne la commande. */
       allow update: if signedIn()
         && resource.data.status == 'active'
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
@@ -66,24 +68,28 @@ service cloud.firestore {
     match /orders/{ref} {
       allow read: if signedIn() && request.auth.uid in resource.data.members;
 
+      /* L acheteur cree la commande. Aucune donnee de paiement n y figure :
+         le reglement se fait a la remise, hors de la plateforme. */
       allow create: if signedIn()
         && request.resource.data.buyerId == request.auth.uid
-        && request.resource.data.sellerId != request.auth.uid
+        && request.resource.data.buyerId != request.resource.data.sellerId
         && request.resource.data.members == [request.resource.data.buyerId, request.resource.data.sellerId]
-        && request.resource.data.status == 'sequestre'
+        && request.resource.data.status == 'commande'
         && request.resource.data.price is int
-        && request.resource.data.price >= 100;
+        && request.resource.data.price >= 100
+        && request.resource.data.code is string
+        && request.resource.data.code.size() == 6;
 
       allow update: if signedIn()
         && request.auth.uid in resource.data.members
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'history', 'updatedAt'])
         && (
           (request.auth.uid == resource.data.sellerId
-            && resource.data.status == 'sequestre'
+            && resource.data.status == 'commande'
             && request.resource.data.status == 'expediee')
           ||
           (request.auth.uid == resource.data.buyerId
-            && resource.data.status in ['sequestre', 'expediee']
+            && resource.data.status in ['commande', 'expediee']
             && request.resource.data.status == 'terminee')
         );
 

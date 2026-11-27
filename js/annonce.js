@@ -96,7 +96,7 @@ import BeniGo from './store.js';
       reservedNote.hidden = false;
     } else {
       buyBtn.addEventListener('click', function () {
-        window.location.href = 'paiement.html?id=' + encodeURIComponent(listing.id);
+        window.location.href = 'commander.html?id=' + encodeURIComponent(listing.id);
       });
     }
   }

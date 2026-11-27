@@ -62,15 +62,15 @@ import BeniGo from './store.js';
     }
 
     document.getElementById('handoffHint').textContent = isBuyer
-      ? 'Presentez ce code au livreur ou au point relais pour retirer votre article.'
-      : 'L acheteur presente ce code a la remise. Ne le communiquez pas avant la livraison.';
+      ? 'Presentez ce code a la remise et reglez le montant au meme moment, en especes ou par mobile money.'
+      : 'Verifiez le code, encaissez le montant, puis marquez le colis comme remis. Ne communiquez pas le code avant la remise.';
 
     var steps = [
-      { key: 'sequestre', label: 'Montant bloque par BeniGo', who: 'systeme' },
+      { key: 'commande', label: 'Commande enregistree, article reserve', who: 'acheteur' },
       { key: 'expediee', label: 'Article remis a la livraison', who: 'vendeur' },
-      { key: 'terminee', label: 'Reception confirmee, fonds liberes', who: 'acheteur' }
+      { key: 'terminee', label: 'Article recu, paiement regle', who: 'acheteur' }
     ];
-    var rank = { sequestre: 0, expediee: 1, terminee: 2 };
+    var rank = { commande: 0, expediee: 1, terminee: 2 };
     var currentIndex = rank[order.status] || 0;
     var timeline = document.getElementById('timeline');
     var history = order.history || [];
@@ -125,22 +125,26 @@ import BeniGo from './store.js';
       actions.appendChild(button);
     }
 
-    if (isSeller && order.status === 'sequestre') {
-      act(function () { return BeniGo.shipOrder(order.ref); }, 'J ai remis le colis a la livraison');
+    if (isSeller && order.status === 'commande') {
+      act(
+        function () { return BeniGo.shipOrder(order.ref); },
+        'J ai remis le colis et encaisse le paiement',
+        'Confirmez-vous avoir remis l article et encaisse le montant ?'
+      );
     }
 
     if (isBuyer && order.status !== 'terminee') {
       act(
         function () { return BeniGo.confirmReception(order.ref); },
-        'J ai recu mon article, liberer le paiement',
-        'Confirmez-vous avoir recu l article ? Le montant sera reverse au vendeur.'
+        'J ai recu l article et j ai paye',
+        'Confirmez-vous avoir recu l article et regle le montant a la remise ?'
       );
     }
 
     if (order.status === 'terminee') {
       var done = document.createElement('p');
       done.className = 'alert';
-      done.textContent = 'Commande terminee. Le vendeur a ete paye. Vous pouvez laisser un commentaire sur l annonce.';
+      done.textContent = 'Commande terminee. Le paiement a ete regle a la remise. Vous pouvez laisser un commentaire sur l annonce.';
       actions.appendChild(done);
     }
 

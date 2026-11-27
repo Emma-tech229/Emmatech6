@@ -103,22 +103,33 @@ const comments = await BeniGo.comments(listing.id);
 ok('commentaires lus dans l ordre', comments.length === 2 && comments[0].text === 'Toujours disponible ?');
 await rejects('commentaire trop court refuse', () => BeniGo.addComment(listing.id, 'a'), 'court');
 
-/* Commande et sequestre */
-await rejects('auto-achat refuse', () => BeniGo.createOrder({ listingId: listing.id, delivery: 'relais', relay: 'Point relais Akpakpa' }), 'propre annonce');
+/* Commande : l acheteur reserve l annonce, le paiement se fait a la remise.
+   Aucun fonds ne transite par la plateforme : la commande ne porte donc
+   aucune donnee de paiement. */
+const sellerId = (await BeniGo.me()).id;
+await rejects(
+  'commande de sa propre annonce refusee',
+  () => BeniGo.createOrder({ listingId: listing.id, delivery: 'relais', relay: 'Point relais Akpakpa' }),
+  'propre annonce'
+);
 
-await BeniGo.login('koffi@benigo.bj', 'secret2');
-await rejects('adresse manquante refusee', () => BeniGo.createOrder({ listingId: listing.id, delivery: 'livreur', address: '' }), 'adresse');
-
+const acheteur = await BeniGo.login('koffi@benigo.bj', 'secret2');
 const order = await BeniGo.createOrder({
   listingId: listing.id,
   delivery: 'relais',
   relay: 'Point relais Akpakpa'
 });
-ok('commande creee en sequestre', order.status === 'sequestre' && order.ref.startsWith('BG-'), order.ref);
-ok('code de remise genere', typeof order.code === 'string' && order.code.length === 6);
+ok('commande enregistree', order.ref.startsWith('BG-') && order.status === 'commande');
+ok('membres de la commande', order.members.length === 2 && order.members[0] === acheteur.id);
+ok('code de remise a 6 chiffres', /^\d{6}$/.test(order.code));
+ok('aucune donnee de paiement', order.payment === undefined && order.status !== 'sequestre');
 ok('annonce reservee', (await BeniGo.listing(listing.id)).status === 'reservee');
-await rejects('double achat refuse', () => BeniGo.createOrder({ listingId: listing.id, delivery: 'relais', relay: 'x' }), 'reserve');
-await rejects('acheteur ne peut pas expedier', () => BeniGo.shipOrder(order.ref), 'vendeur');
+await rejects(
+  'annonce deja reservee refusee',
+  () => BeniGo.createOrder({ listingId: listing.id, delivery: 'relais', relay: 'Point relais Akpakpa' }),
+  'deja reserve'
+);
+await rejects('acheteur ne peut pas marquer la remise', () => BeniGo.shipOrder(order.ref), 'vendeur');
 
 const buyerOrders = await BeniGo.orders();
 ok('achat visible cote acheteur', buyerOrders.length === 1 && buyerOrders[0].buyerName === 'Koffi Jean');
@@ -128,13 +139,13 @@ const sellerOrders = await BeniGo.orders();
 ok('vente visible cote vendeur', sellerOrders.length === 1 && sellerOrders[0].sellerName === 'Awa Dossou');
 await rejects('vendeur ne peut pas confirmer', () => BeniGo.confirmReception(order.ref), 'acheteur');
 const shipped = await BeniGo.shipOrder(order.ref);
-ok('vendeur declare l envoi', shipped.status === 'expediee');
-await rejects('envoi deux fois refuse', () => BeniGo.shipOrder(order.ref), 'plus etre expediee');
+ok('vendeur declare la remise', shipped.status === 'expediee');
+await rejects('remise deux fois refusee', () => BeniGo.shipOrder(order.ref), 'plus etre expediee');
 
 await BeniGo.login('koffi@benigo.bj', 'secret2');
 const done = await BeniGo.confirmReception(order.ref);
-ok('acheteur confirme la reception', done.status === 'terminee');
-ok('historique du sequestre', done.history.length === 3, JSON.stringify(done.history));
+ok('acheteur confirme la remise', done.status === 'terminee');
+ok('historique de la commande', done.history.length === 3, JSON.stringify(done.history));
 await rejects('double confirmation refusee', () => BeniGo.confirmReception(order.ref), 'deja confirmee');
 
 /* Un tiers ne doit pas acceder a la commande. */

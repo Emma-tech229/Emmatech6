@@ -1,9 +1,11 @@
 import BeniGo from './store.js';
+
 (function () {
   var params = new URLSearchParams(window.location.search);
   var listingId = params.get('id') || '';
   var errorBox = document.getElementById('error');
-  var payBtn = document.getElementById('payBtn');
+  var orderBtn = document.getElementById('orderBtn');
+  var form = document.getElementById('orderForm');
   var user = null;
   var listing = null;
 
@@ -24,7 +26,7 @@ import BeniGo from './store.js';
     }
     listing = result;
     if (listing.sellerId === user.id) {
-      fail('Vous ne pouvez pas acheter votre propre annonce.');
+      fail('Vous ne pouvez pas commander votre propre annonce.');
       return;
     }
     if (listing.status !== 'active') {
@@ -72,24 +74,33 @@ import BeniGo from './store.js';
     });
   }
 
-  document.getElementById('payForm').addEventListener('submit', function (event) {
+  form.addEventListener('submit', function (event) {
     event.preventDefault();
     if (!listing) return;
     errorBox.hidden = true;
-    payBtn.disabled = true;
 
     var delivery = document.querySelector('input[name="delivery"]:checked').value;
-    var relay = document.getElementById('relay').value;
+    var address = document.getElementById('address').value;
+
+    if (delivery === 'livreur' && address.trim().length < 6) {
+      fail('Indiquez une adresse de livraison.');
+      return;
+    }
+
+    orderBtn.disabled = true;
+    orderBtn.textContent = 'Enregistrement.';
 
     BeniGo.createOrder({
       listingId: listing.id,
       delivery: delivery,
-      relay: relay,
-      address: document.getElementById('address').value
-    }).then(function (order) {
-      window.location.href = 'commande.html?ref=' + encodeURIComponent(order.ref);
-    }, function (error) {
-      payBtn.disabled = false;
+      relay: delivery === 'relais' ? document.getElementById('relay').value : '',
+      address: delivery === 'livreur' ? address : '',
+      phone: document.getElementById('phone').value || user.phone || ''
+    }).then(function (data) {
+      window.location.href = 'commande.html?ref=' + encodeURIComponent(data.ref);
+    }).catch(function (error) {
+      orderBtn.disabled = false;
+      orderBtn.textContent = 'Enregistrer ma commande';
       fail(error.message);
     });
   });

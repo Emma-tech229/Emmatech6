@@ -61,6 +61,10 @@ export async function signInWithEmailAndPassword(auth, email, password) {
   return { user: record.user };
 }
 
+export async function getIdToken(user) {
+  return 'jeton-' + (user && user.uid ? user.uid : 'anonyme');
+}
+
 export async function signOut() {
   authUser = null;
   notify();
