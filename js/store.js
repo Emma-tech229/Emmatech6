@@ -45,6 +45,33 @@ export const STATUS_LABELS = {
   terminee: 'Article recu, paiement regle'
 };
 
+/* Abonnement vendeur : essai gratuit a l inscription, puis abonnement payant.
+   La duree de l essai se regle ICI et nulle part ailleurs : les regles
+   Firestore ne fixent qu un plafond de securite, SUBSCRIPTION_MAX_DAYS, qui
+   doit rester egal a plafondEssaiMs() dans firestore.rules. Toute duree sous
+   ce plafond (plus courte ou plus longue) ne demande donc aucune modification
+   des regles ; le test local signale tout depassement.
+   La date de fin est portee par le profil (abonnementJusquA, en millisecondes)
+   et controlee par les regles a chaque publication. Les profils crees avant
+   l abonnement retombent sur leur date d inscription. */
+export const SUBSCRIPTION_FREE_DAYS = 60;
+export const SUBSCRIPTION_MAX_DAYS = 366;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function subscriptionEnd(profile) {
+  if (!profile) return 0;
+  const declared = Number(profile.abonnementJusquA) || 0;
+  if (declared) return declared;
+  const created = Number(profile.createdAt) || 0;
+  return created ? created + SUBSCRIPTION_FREE_DAYS * DAY_MS : 0;
+}
+
+export function subscriptionStatus(profile) {
+  const endAt = subscriptionEnd(profile);
+  const left = endAt ? Math.ceil((endAt - Date.now()) / DAY_MS) : 0;
+  return { active: endAt > Date.now(), endAt: endAt, daysLeft: left > 0 ? left : 0 };
+}
+
 const CONFIG_ERROR = 'Firebase n est pas configure : renseignez js/firebase-config.js avec les cles de votre projet.';
 
 export function money(value) {
@@ -179,7 +206,8 @@ async function loadProfile(user) {
       name: (user.displayName || user.email || 'Membre').split('@')[0],
       email: user.email || '',
       phone: '',
-      createdAt: 0
+      createdAt: 0,
+      abonnementJusquA: 0
     };
     return profile;
   }
@@ -189,7 +217,8 @@ async function loadProfile(user) {
     name: data.name || user.displayName || 'Membre',
     email: data.email || user.email || '',
     phone: data.phone || '',
-    createdAt: data.createdAt || 0
+    createdAt: data.createdAt || 0,
+    abonnementJusquA: data.abonnementJusquA || 0
   };
   return profile;
 }
@@ -235,11 +264,13 @@ export async function signup(data) {
     profile = null;
     throw new Error('Un compte existe deja avec ce numero de telephone.');
   }
+  const now = Date.now();
   const record = {
     name: name,
     email: email,
     phone: phone,
-    createdAt: Date.now()
+    createdAt: now,
+    abonnementJusquA: now + SUBSCRIPTION_FREE_DAYS * DAY_MS
   };
   try {
     await updateProfile(user, { displayName: name });
@@ -331,10 +362,23 @@ export async function addListing(data) {
   const user = await me();
   if (!user) throw new Error('Connectez-vous pour publier.');
 
+  const abonnement = subscriptionStatus(user);
+  if (!abonnement.active) {
+    const fin = abonnement.endAt ? ' le ' + dateLabel(abonnement.endAt) : '';
+    throw new Error(
+      'Votre abonnement vendeur a expire' + fin +
+      '. Renouvelez-le depuis votre profil pour publier une annonce.'
+    );
+  }
+
   const title = String(data.title || '').trim();
   const price = Math.round(Number(data.price));
   if (title.length < 4) throw new Error('Le titre doit contenir au moins 4 caracteres.');
   if (!Number.isFinite(price) || price < 100) throw new Error('Indiquez un prix valable (minimum 100 FCFA).');
+
+  /* Une annonce sans photo n est pas publiee, ni ici ni dans les regles. */
+  const images = (data.images || []).slice(0, 4);
+  if (!images.length) throw new Error('Ajoutez au moins une photo avant de publier.');
 
   const record = {
     sellerId: user.id,
@@ -345,7 +389,7 @@ export async function addListing(data) {
     category: data.category || 'Autres',
     condition: data.condition || 'Bon etat',
     place: String(data.place || '').trim(),
-    images: (data.images || []).slice(0, 4),
+    images: images,
     status: 'active',
     createdAt: Date.now()
   };
@@ -363,14 +407,47 @@ export async function removeListing(id) {
   await updateDoc(doc(db, 'listings', id), { status: 'retiree' });
 }
 
+/* L envoi d une photo est borne dans le temps : si le stockage Firebase ne
+   repond pas (bucket inactif, reseau trop faible), la page recoit une erreur
+   au lieu de rester bloquee sur "Envoi des photos". */
+const PHOTO_TIMEOUT_MS = 30000;
+const STORAGE_UNAVAILABLE =
+  'L envoi des photos ne repond pas : l espace de stockage Firebase est peut-etre inactif, ou le reseau est trop faible.';
+
+function withTimeout(promise, ms, message) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); }
+    );
+  });
+}
+
+function storageErrorMessage(error) {
+  const code = (error && error.code) || '';
+  if (code === 'storage/unauthorized' || code === 'storage/unauthenticated') {
+    return 'Envoi de photo refuse : reconnectez-vous, puis reessayez.';
+  }
+  if (code === 'storage/canceled') return 'Envoi de photo interrompu.';
+  if (code === 'storage/quota-exceeded') return 'Espace de stockage des photos sature.';
+  if (code === 'storage/invalid-checksum' || code === 'storage/invalid-argument') {
+    return 'Cette photo n a pas pu etre preparee. Essayez une autre image.';
+  }
+  return STORAGE_UNAVAILABLE;
+}
+
 export async function uploadImage(blob) {
   assertConfigured();
   const user = await me();
   if (!user) throw new Error('Connectez-vous pour envoyer une photo.');
   const name = 'listings/' + user.id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
   const target = ref(storage, name);
-  await uploadBytes(target, blob, { contentType: 'image/jpeg' });
-  return getDownloadURL(target);
+  const transfer = uploadBytes(target, blob, { contentType: 'image/jpeg' }).then(
+    () => getDownloadURL(target),
+    (error) => { throw new Error(storageErrorMessage(error)); }
+  );
+  return withTimeout(transfer, PHOTO_TIMEOUT_MS, STORAGE_UNAVAILABLE);
 }
 
 /* --- commentaires --- */
@@ -552,6 +629,10 @@ if (typeof document !== 'undefined') {
 const BeniGo = {
   RELAYS,
   STATUS_LABELS,
+  SUBSCRIPTION_FREE_DAYS,
+  SUBSCRIPTION_MAX_DAYS,
+  subscriptionEnd,
+  subscriptionStatus,
   signup,
   login,
   logout,

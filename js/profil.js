@@ -34,6 +34,8 @@ import BeniGo from './store.js';
     document.getElementById('userContact').textContent =
       user.email + ' - ' + user.phone + ' - membre depuis ' + BeniGo.dateLabel(user.createdAt);
 
+    renderSubscription(user);
+
     return Promise.all([BeniGo.myListings(), BeniGo.orders()]);
   }).then(function (results) {
     if (!user || !results) return;
@@ -64,6 +66,25 @@ import BeniGo from './store.js';
       window.location.href = 'index.html';
     });
   });
+
+  function renderSubscription(account) {
+    var line = document.getElementById('subscriptionLine');
+    var expired = document.getElementById('subscriptionExpired');
+    var abonnement = BeniGo.subscriptionStatus(account);
+    if (abonnement.active) {
+      var jours = abonnement.daysLeft;
+      line.textContent = 'Actif jusqu au ' + BeniGo.dateLabel(abonnement.endAt) + ' (' +
+        jours + (jours > 1 ? ' jours restants' : ' jour restant') + ').';
+      expired.hidden = true;
+      return;
+    }
+    line.textContent = abonnement.endAt
+      ? 'Expire le ' + BeniGo.dateLabel(abonnement.endAt) + '.'
+      : 'Aucun abonnement vendeur enregistre.';
+    expired.textContent =
+      'La publication de nouvelles annonces est bloquee. Contactez l equipe BeniGo pour renouveler votre abonnement.';
+    expired.hidden = false;
+  }
 
   function thumb(src, alt) {
     var box = document.createElement('div');

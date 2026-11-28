@@ -17,6 +17,24 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    /* Plafond de securite de l essai vendeur, en millisecondes (366 jours).
+       La duree reelle de l essai se regle dans js/store.js
+       (SUBSCRIPTION_FREE_DAYS) : tant qu elle reste sous ce plafond, ces
+       regles n ont pas besoin d etre modifiees. Pour offrir davantage, il
+       faut augmenter ce plafond ET SUBSCRIPTION_MAX_DAYS dans js/store.js. */
+    function plafondEssaiMs() {
+      return 31622400000;
+    }
+
+    /* Abonnement vendeur : la date de fin portee par le profil doit rester
+       dans le futur. Un profil sans date (cree avant l abonnement) retombe
+       sur le plafond a partir de sa date d inscription. */
+    function abonnementActif(uid) {
+      let profil = get(/databases/$(database)/documents/users/$(uid)).data;
+      let fin = profil.get('abonnementJusquA', profil.get('createdAt', 0) + plafondEssaiMs());
+      return fin >= request.time.toMillis();
+    }
+
     /* Profils : le nom et le telephone sont visibles pour les membres connectes
        (ils servent a joindre l autre partie pendant une livraison). */
     match /users/{uid} {
@@ -25,15 +43,27 @@ service cloud.firestore {
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 2
         && request.resource.data.phone is string
-        && request.resource.data.phone.size() >= 8;
-      allow update: if isSelf(uid);
+        && request.resource.data.phone.size() >= 8
+        /* L inscription ecrit la date de fin, plafonnee : aucun compte ne
+           peut s offrir un abonnement au dela du plafond. */
+        && request.resource.data.abonnementJusquA is int
+        && request.resource.data.abonnementJusquA
+          <= request.time.toMillis() + plafondEssaiMs();
+      /* Le membre modifie son profil mais pas sa date d abonnement : seul le
+         proprietaire du projet peut la prolonger, depuis la console. */
+      allow update: if isSelf(uid)
+        && request.resource.data.get('abonnementJusquA', 0)
+          == resource.data.get('abonnementJusquA', 0);
       allow delete: if isSelf(uid);
     }
 
     match /listings/{listingId} {
       allow read: if true;
 
+      /* Publier demande un abonnement vendeur actif. Les annonces deja en
+         ligne restent lisibles, modifiables et retirables apres expiration. */
       allow create: if signedIn()
+        && abonnementActif(request.auth.uid)
         && request.resource.data.sellerId == request.auth.uid
         && request.resource.data.title is string
         && request.resource.data.title.size() >= 4
@@ -41,6 +71,7 @@ service cloud.firestore {
         && request.resource.data.price >= 100
         && request.resource.data.status == 'active'
         && request.resource.data.images is list
+        && request.resource.data.images.size() > 0
         && request.resource.data.images.size() <= 4;
 
       /* Le vendeur modifie ou retire son annonce. */

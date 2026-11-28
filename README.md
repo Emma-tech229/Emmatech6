@@ -101,9 +101,12 @@ production.
 
 ## Donnees
 
-- `users/{uid}` : nom, email, telephone, date d'inscription.
+- `users/{uid}` : nom, email, telephone, date d'inscription et date de fin
+  d'abonnement (`abonnementJusquA`).
 - `listings/{id}` : vendeur, titre, description, prix, categorie, etat, lieu,
-  photos (URLs Storage), statut (`active`, `reservee`, `retiree`).
+  photos (URLs Storage, au moins une et quatre au maximum : une annonce sans
+  photo est refusee par le client et par les regles), statut (`active`,
+  `reservee`, `retiree`).
 - `listings/{id}/comments/{id}` : auteur, texte, date.
 - `orders/{ref}` : acheteur, vendeur, prix, mode de remise, code de remise,
   statut, historique. Aucune donnee de paiement n'est stockee : la plateforme
@@ -115,6 +118,34 @@ passe l'annonce a `reservee`. Les regles Firestore limitent la suite du
 parcours : seul le vendeur passe la commande a `expediee` (colis remis a la
 livraison), seul l'acheteur la passe a `terminee` (article recu et paiement
 regle), et seuls l'acheteur et le vendeur peuvent lire la commande.
+
+## Abonnement vendeur
+
+Chaque compte recoit une **periode d'essai gratuite** a l'inscription :
+`signup()` ecrit `abonnementJusquA` (date de fin en millisecondes) dans
+`users/{uid}`, calculee a partir de `SUBSCRIPTION_FREE_DAYS`. La date apparait
+dans `profil.html`.
+
+La duree se regle a un seul endroit : `SUBSCRIPTION_FREE_DAYS` dans
+`js/store.js` (60 jours par defaut). Les regles Firestore ne fixent qu'un
+plafond de securite, `plafondEssaiMs()` (366 jours) : toute duree inferieure ne
+demande donc aucune modification des regles. Le test local echoue si
+`SUBSCRIPTION_FREE_DAYS` depasse `SUBSCRIPTION_MAX_DAYS`, qui doit valoir la
+meme valeur que `plafondEssaiMs()`.
+
+Publier une annonce demande un abonnement actif :
+
+- cote client, `addListing()` et `publier.html` refusent la publication et
+  affichent la date d'expiration ;
+- cote base, la regle `listings.create` exige `abonnementActif(uid)` ; un membre
+  ne peut pas modifier sa propre date d'abonnement, seul le proprietaire du
+  projet la prolonge depuis la console Firebase.
+
+Apres expiration, les annonces deja en ligne, les commandes et les achats
+restent utilisables ; seules les nouvelles publications sont bloquees. Un
+profil cree avant cette fonction retombe sur l'essai a compter de sa date
+d'inscription. Les pages ne citent pas de duree en clair : elles parlent d'une
+periode d'essai gratuite, pour rester justes si la duree change.
 
 ## Tests
 
@@ -142,6 +173,9 @@ fois configure.
 - **Reservation sans engagement** : une annonce passee a `reservee` reste
   bloquee tant que le vendeur ne la repasse pas a `active`. Il n'existe pas
   encore de delai automatique d'expiration.
+- **Renouvellement manuel de l'abonnement** : il n'y a pas encore de paiement
+  en ligne. La prolongation se fait dans la console Firebase en changeant
+  `abonnementJusquA` (millisecondes) dans `users/{uid}`.
 - L'unicite du numero de telephone est verifiee cote client avant l'inscription,
   sans index unique cote base : deux inscriptions simultanees avec le meme
   numero restent possibles.

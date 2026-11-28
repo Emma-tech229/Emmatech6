@@ -52,6 +52,28 @@ ok('inscription vendeur', seller.id && seller.name === 'Awa Dossou');
 const buyer = await BeniGo.signup({ name: 'Koffi Jean', email: 'koffi@benigo.bj', phone: '97000002', password: 'secret2' });
 ok('inscription acheteur', buyer.email === 'koffi@benigo.bj');
 
+/* Abonnement vendeur : essai gratuit reglable, puis publication bloquee.
+   La duree se regle dans js/store.js ; le test verifie seulement qu elle
+   reste sous le plafond que les regles Firestore autorisent. */
+const jour = 24 * 60 * 60 * 1000;
+const duree = BeniGo.SUBSCRIPTION_FREE_DAYS;
+ok('duree d essai positive', Number.isInteger(duree) && duree > 0, String(duree));
+ok(
+  'duree sous le plafond des regles Firestore',
+  duree <= BeniGo.SUBSCRIPTION_MAX_DAYS,
+  duree + ' jours pour un plafond de ' + BeniGo.SUBSCRIPTION_MAX_DAYS +
+    ' : augmentez plafondEssaiMs() dans firestore.rules et SUBSCRIPTION_MAX_DAYS dans js/store.js'
+);
+const essai = BeniGo.subscriptionStatus(seller);
+ok('essai offert a l inscription', essai.active && essai.endAt > Date.now() + (duree - 2) * jour && essai.endAt <= Date.now() + (duree + 1) * jour, String(essai.endAt));
+ok('abonnement actif garde la publication', essai.daysLeft >= duree - 2 && essai.daysLeft <= duree + 1, String(essai.daysLeft));
+const expire = BeniGo.subscriptionStatus({ createdAt: Date.now() - 200 * jour, abonnementJusquA: Date.now() - jour });
+ok('abonnement expire detecte', !expire.active && expire.daysLeft === 0);
+ok('date d expiration conservee', expire.endAt > 0);
+const ancien = BeniGo.subscriptionStatus({ createdAt: Date.now() - Math.floor(duree / 2) * jour });
+ok('profil sans date retombe sur l inscription', ancien.active && ancien.daysLeft <= Math.ceil(duree / 2) + 1, String(ancien.daysLeft));
+ok('profil absent sans abonnement', !BeniGo.subscriptionStatus(null).active);
+
 await rejects('doublon email refuse', () => BeniGo.signup({ name: 'Autre', email: 'awa@benigo.bj', phone: '97000009', password: 'secret1' }), 'existe deja');
 await rejects('telephone trop court refuse', () => BeniGo.signup({ name: 'Autre', email: 'x@benigo.bj', phone: '12', password: 'secret1' }), 'telephone');
 await rejects('mot de passe court refuse', () => BeniGo.signup({ name: 'Autre', email: 'y@benigo.bj', phone: '97000008', password: '123' }), 'mot de passe');
@@ -74,6 +96,11 @@ ok('connexion email', logged.email === 'awa@benigo.bj');
 
 await rejects('titre trop court refuse', () => BeniGo.addListing({ title: 'ab', price: 5000 }), 'titre');
 await rejects('prix trop bas refuse', () => BeniGo.addListing({ title: 'Objet valable', price: 10 }), 'prix');
+await rejects(
+  'publication sans photo refusee',
+  () => BeniGo.addListing({ title: 'Objet valable', price: 5000, images: [] }),
+  'photo'
+);
 
 const listing = await BeniGo.addListing({
   title: 'Samsung A24 128 Go',
@@ -95,6 +122,18 @@ ok('detail annonce', (await BeniGo.listing(listing.id)).title === 'Samsung A24 1
 /* Images : la couche cliente envoie le binaire et recupere une URL. */
 const url = await BeniGo.uploadImage(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' }));
 ok('upload image', url.startsWith('https://storage.test/listings/'), url);
+
+/* Une panne de stockage doit remonter une erreur claire, sans bloquer la page. */
+const firebase = await import(pathToFileURL(path.join(build, 'firebase.js')).href);
+firebase.__storageFails('storage/unknown');
+await rejects(
+  'panne de stockage signalee',
+  () => BeniGo.uploadImage(new Blob([new Uint8Array([1])], { type: 'image/jpeg' })),
+  'stockage'
+);
+firebase.__storageFails(null);
+const reprise = await BeniGo.uploadImage(new Blob([new Uint8Array([1])], { type: 'image/jpeg' }));
+ok('envoi retabli apres la panne', reprise.startsWith('https://storage.test/listings/'), reprise);
 
 /* Commentaires */
 await BeniGo.addComment(listing.id, 'Toujours disponible ?');

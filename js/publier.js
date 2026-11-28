@@ -8,9 +8,21 @@ import BeniGo from './store.js';
   var submitBtn = document.getElementById('submitBtn');
   var photos = [];
   var user = null;
+  var blocked = false;
 
   BeniGo.requireUser('connexion.html').then(function (account) {
     user = account;
+    if (!user) return;
+    var abonnement = BeniGo.subscriptionStatus(user);
+    if (!abonnement.active) {
+      blocked = true;
+      submitBtn.disabled = true;
+      showError(
+        'Votre abonnement vendeur a expire' +
+        (abonnement.endAt ? ' le ' + BeniGo.dateLabel(abonnement.endAt) : '') +
+        '. Rendez-vous dans Mon profil pour le renouveler, puis revenez publier.'
+      );
+    }
   });
 
   function showError(message) {
@@ -100,6 +112,39 @@ import BeniGo from './store.js';
     });
   });
 
+  function publish(urls) {
+    submitBtn.disabled = true;
+    successBox.textContent = 'Publication de l annonce.';
+    successBox.hidden = false;
+    return BeniGo.addListing({
+      title: document.getElementById('title').value,
+      price: document.getElementById('price').value,
+      category: document.getElementById('category').value,
+      condition: document.getElementById('condition').value,
+      place: document.getElementById('place').value,
+      description: document.getElementById('description').value,
+      images: urls
+    }).then(function (listing) {
+      window.location.href = 'annonce.html?id=' + encodeURIComponent(listing.id);
+    }).catch(function (error) {
+      submitBtn.disabled = false;
+      successBox.hidden = true;
+      showError(error.message);
+    });
+  }
+
+  function sendPhotos() {
+    var urls = [];
+    var chain = Promise.resolve();
+    photos.forEach(function (photo, index) {
+      chain = chain.then(function () {
+        successBox.textContent = 'Envoi de la photo ' + (index + 1) + ' sur ' + photos.length + '.';
+        return BeniGo.uploadImage(photo.blob).then(function (url) { urls.push(url); });
+      });
+    });
+    return chain.then(function () { return urls; });
+  }
+
   form.addEventListener('submit', function (event) {
     event.preventDefault();
     errorBox.hidden = true;
@@ -110,35 +155,24 @@ import BeniGo from './store.js';
       return;
     }
 
+    if (blocked) {
+      showError('Votre abonnement vendeur a expire. Rendez-vous dans Mon profil pour le renouveler.');
+      return;
+    }
+
+    if (!photos.length) {
+      showError('Ajoutez au moins une photo avant de publier.');
+      return;
+    }
+
     submitBtn.disabled = true;
     successBox.textContent = 'Envoi des photos.';
     successBox.hidden = false;
 
-    var urls = [];
-    var chain = Promise.resolve();
-    photos.forEach(function (photo) {
-      chain = chain.then(function () {
-        return BeniGo.uploadImage(photo.blob).then(function (url) { urls.push(url); });
-      });
-    });
-
-    chain.then(function () {
-      successBox.textContent = 'Publication de l annonce.';
-      return BeniGo.addListing({
-        title: document.getElementById('title').value,
-        price: document.getElementById('price').value,
-        category: document.getElementById('category').value,
-        condition: document.getElementById('condition').value,
-        place: document.getElementById('place').value,
-        description: document.getElementById('description').value,
-        images: urls
-      });
-    }).then(function (listing) {
-      window.location.href = 'annonce.html?id=' + encodeURIComponent(listing.id);
-    }).catch(function (error) {
+    sendPhotos().then(publish).catch(function (error) {
       submitBtn.disabled = false;
       successBox.hidden = true;
-      showError(error.message);
+      showError(error.message + ' Reessayez dans un instant.');
     });
   });
 
