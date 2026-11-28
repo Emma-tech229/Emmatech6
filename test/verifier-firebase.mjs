@@ -1,13 +1,14 @@
-/* Verification de la configuration Firebase de BeniGo.
+/* Verification de la configuration de BeniGo.
    Lancement : node test/verifier-firebase.mjs
-   Avec un compte de test (verifie aussi l ecriture Firestore et le Storage) :
+   Avec un compte de test (verifie aussi la lecture du profil Firestore) :
      BENIGO_EMAIL=test@benigo.bj BENIGO_PASSWORD=secret1 node test/verifier-firebase.mjs
    ou : node test/verifier-firebase.mjs --email test@benigo.bj --password secret1
+   Pour tester aussi un vrai envoi de photo vers Cloudinary :
+     BENIGO_VERIFY_PHOTO=1 node test/verifier-firebase.mjs
 
-   Le script n utilise que fetch et les API REST de Firebase : aucune
-   dependance a installer. Il ne modifie rien, sauf avec un compte de test, ou
-   il depose une petite image de verification sous listings/{uid}/ puis la
-   supprime. */
+   Le script n utilise que fetch et les API REST : aucune dependance a
+   installer. Il ne modifie rien, sauf avec BENIGO_VERIFY_PHOTO=1, qui laisse
+   une petite image de verification dans la media library Cloudinary. */
 
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -20,7 +21,7 @@ const { firebaseConfig, isConfigured } = await import(
 
 const SDK_VERSION = '10.12.5';
 const TIMEOUT = 15000;
-const MODULES = ['firebase-app.js', 'firebase-auth.js', 'firebase-firestore.js', 'firebase-storage.js'];
+const MODULES = ['firebase-app.js', 'firebase-auth.js', 'firebase-firestore.js'];
 const PLACEHOLDER = /REMPLACER/i;
 
 let failures = 0;
@@ -82,8 +83,9 @@ const firestoreBase =
   'https://firestore.googleapis.com/v1/projects/' +
   encodeURIComponent(firebaseConfig.projectId) +
   '/databases/(default)/documents';
-const storageBase =
-  'https://firebasestorage.googleapis.com/v0/b/' + encodeURIComponent(firebaseConfig.storageBucket) + '/o';
+const { imageHost, imageHostConfigured } = await import(
+  pathToFileURL(path.join(root, 'js', 'images-config.js')).href
+);
 
 /* 1. Champs de configuration -------------------------------------------- */
 
@@ -103,7 +105,7 @@ const FIELDS = [
   ['apiKey', 'cle API'],
   ['authDomain', 'domaine d authentification'],
   ['projectId', 'identifiant du projet'],
-  ['storageBucket', 'bucket Storage'],
+  ['storageBucket', 'bucket declare par Firebase'],
   ['appId', 'identifiant de l application'],
   ['messagingSenderId', 'identifiant d envoi']
 ];
@@ -114,9 +116,6 @@ for (const [field, label] of FIELDS) {
   else ok(label + ' renseigne', field === 'apiKey' ? value.slice(0, 6) + '...' : value);
 }
 
-if (/\.firebaseapp\.com$/.test(String(firebaseConfig.storageBucket || ''))) {
-  warn('bucket Storage', 'format ancien ; la console affiche .firebasestorage.app');
-}
 if (!/^AIza/.test(String(firebaseConfig.apiKey || ''))) {
   warn('cle API', 'une cle web Firebase commence generalement par AIza');
 }
@@ -203,41 +202,78 @@ try {
   fail('base Firestore joignable', error.message);
 }
 
-/* 5. Storage ----------------------------------------------------------- */
+/* 5. Hebergement des photos (Cloudinary) -------------------------------- */
 
-section('Cloud Storage');
+section('Hebergement des photos (js/images-config.js)');
 
-try {
-  const result = await request(storageBase + '?maxResults=1');
-  const detail = apiError(result);
-  if (result.status === 401 || result.status === 403) {
-    ok('bucket Storage joignable', 'existe, acces anonyme refuse comme prevu');
-  } else if (result.status === 404) {
-    fail(
-      'bucket Storage joignable',
-      apiKeyOk
-        ? 'bucket introuvable : activez Storage, ou verifiez storageBucket'
-        : 'bucket introuvable : verifiez la cle API, le bucket et le projectId'
+if (!imageHostConfigured()) {
+  fail(
+    'compte Cloudinary renseigne',
+    'js/images-config.js contient encore les valeurs REMPLACER (cloudName, uploadPreset)'
+  );
+} else {
+  ok('compte Cloudinary renseigne', imageHost.cloudName);
+  ok('preset d envoi renseigne', imageHost.uploadPreset);
+  try {
+    const result = await request(
+      'https://api.cloudinary.com/v1_1/' + encodeURIComponent(imageHost.cloudName) + '/image/upload',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upload_preset: imageHost.uploadPreset })
+      }
     );
-  } else if (result.ok) {
-    ok('bucket Storage joignable');
-  } else {
-    fail('bucket Storage joignable', detail);
+    if (result.status === 401 || result.status === 403 || result.status === 404) {
+      fail('cloudName joignable', apiError(result));
+    } else {
+      ok('cloudName joignable', 'HTTP ' + result.status + ' ; preset a confirmer par un envoi reel');
+    }
+  } catch (error) {
+    fail('cloudName joignable', error.message);
   }
-} catch (error) {
-  fail('bucket Storage joignable', error.message);
 }
 
-/* 6. Verification avec un compte de test ------------------------------- */
+/* 6. Envoi reel d une photo (optionnel) ------------------------------- */
+
+if (process.env.BENIGO_VERIFY_PHOTO === '1' && imageHostConfigured()) {
+  section('Envoi reel d une photo');
+  try {
+    const body = new FormData();
+    const image = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64'
+    );
+    body.append('file', new Blob([image], { type: 'image/png' }), 'verification.png');
+    body.append('upload_preset', imageHost.uploadPreset);
+    const upload = await fetch(
+      'https://api.cloudinary.com/v1_1/' + encodeURIComponent(imageHost.cloudName) + '/image/upload',
+      { method: 'POST', body: body, signal: AbortSignal.timeout(TIMEOUT) }
+    );
+    const payload = await upload.json().catch(() => null);
+    if (upload.ok && payload && payload.secure_url) {
+      warn(
+        'envoi d une photo',
+        'ok, image de test laissee dans la media library : ' + payload.secure_url
+      );
+    } else {
+      fail('envoi d une photo', payload && payload.error ? payload.error.message : 'HTTP ' + upload.status);
+    }
+  } catch (error) {
+    fail('envoi d une photo', error.message);
+  }
+} else {
+  skip('envoi reel d une photo', 'BENIGO_VERIFY_PHOTO=1 pour le tester');
+}
+
+/* 7. Verification avec un compte de test ------------------------------- */
 
 section('Compte de test et ecritures');
 
 if (!email || !password) {
   skip('connexion du compte de test', 'BENIGO_EMAIL et BENIGO_PASSWORD non definis');
   skip('lecture du profil Firestore', 'aucun compte de test');
-  skip('envoi et suppression d une image Storage', 'aucun compte de test');
   console.log(
-    '\nPour verifier aussi les regles et le Storage :\n' +
+    '\nPour verifier aussi les regles Firestore :\n' +
       '  BENIGO_EMAIL=vous@exemple.bj BENIGO_PASSWORD=votre-mot-de-passe node test/verifier-firebase.mjs'
   );
 } else {
@@ -280,37 +316,7 @@ if (!email || !password) {
       fail('lecture du profil Firestore', error.message);
     }
 
-    const objectName = 'listings/' + uid + '/verification-' + Date.now() + '.jpg';
-    const objectUrl = storageBase + '/' + encodeURIComponent(objectName);
-    const image = new Uint8Array([255, 216, 255, 224, 0, 16, 74, 70, 73, 70, 0, 1, 255, 217]);
-
-    try {
-      const upload = await request(storageBase + '?uploadType=media&name=' + encodeURIComponent(objectName), {
-        method: 'POST',
-        headers: Object.assign({ 'Content-Type': 'image/jpeg' }, headers),
-        body: image
-      });
-      if (upload.ok) {
-        const download = await request(objectUrl + '?alt=media', { headers: headers });
-        if (download.ok) ok('envoi et relecture d une image Storage', objectName);
-        else fail('envoi et relecture d une image Storage', apiError(download));
-
-        const removed = await request(objectUrl, { method: 'DELETE', headers: headers });
-        if (removed.ok) ok('suppression de l image de verification');
-        else warn('suppression de l image de verification', apiError(removed) + ' ; supprimez ' + objectName);
-      } else if (upload.status === 403) {
-        fail(
-          'envoi d une image Storage',
-          'refuse par les regles : publiez storage.rules dans Storage > Regles'
-        );
-      } else if (upload.status === 404) {
-        fail('envoi d une image Storage', 'bucket introuvable ou Storage non active');
-      } else {
-        fail('envoi d une image Storage', apiError(upload));
-      }
-    } catch (error) {
-      fail('envoi d une image Storage', error.message);
-    }
+    
   }
 }
 

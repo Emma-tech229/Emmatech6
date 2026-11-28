@@ -88,10 +88,6 @@ export function getFirestore() {
   return { kind: 'firestore' };
 }
 
-export function getStorage() {
-  return { kind: 'storage' };
-}
-
 export function collection(db, ...segments) {
   return { type: 'collection', path: docPath(segments) };
 }
@@ -205,27 +201,6 @@ export async function runTransaction(db, handler) {
     delete: async (reference) => documents.delete(reference.path)
   };
   return handler(transaction);
-}
-
-export function ref(storage, path) {
-  return { type: 'ref', path };
-}
-
-let storageError = null;
-
-export function uploadBytes(reference) {
-  if (storageError) {
-    return Promise.reject(Object.assign(new Error('envoi refuse'), { code: storageError }));
-  }
-  return Promise.resolve({ ref: reference });
-}
-
-export function __storageFails(code) {
-  storageError = code || null;
-}
-
-export async function getDownloadURL(reference) {
-  return 'https://storage.test/' + reference.path;
 }
 
 export function __reset() {

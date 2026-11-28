@@ -1,7 +1,7 @@
-/* BeniGo - acces aux donnees partagees via Firebase.
+/* BeniGo - acces aux donnees partagees.
    - Firebase Auth : comptes email/mot de passe
    - Cloud Firestore : annonces, commentaires, commandes
-   - Cloud Storage : photos des annonces
+   - Cloudinary : photos des annonces (voir js/images-config.js)
    Le navigateur ne garde que la session Firebase de l'appareil. */
 
 import {
@@ -24,13 +24,10 @@ import {
   query,
   where,
   orderBy,
-  runTransaction,
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL
+  runTransaction
 } from './firebase.js';
 import { firebaseConfig, isConfigured } from './firebase-config.js';
+import { imageHost, imageHostConfigured } from './images-config.js';
 
 export const RELAYS = [
   { id: 'r1', name: 'Point relais Akpakpa', detail: 'Akpakpa, Cotonou' },
@@ -131,7 +128,6 @@ function sortByDate(items, field, direction) {
 let app = null;
 let auth = null;
 let db = null;
-let storage = null;
 let authUser = null;
 let profile = null;
 const authReady = new Promise((resolve) => {
@@ -142,7 +138,6 @@ const authReady = new Promise((resolve) => {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
-  storage = getStorage(app);
   onAuthStateChanged(auth, (user) => {
     authUser = user;
     if (user && profile && profile.id !== user.uid) profile = null;
@@ -407,12 +402,15 @@ export async function removeListing(id) {
   await updateDoc(doc(db, 'listings', id), { status: 'retiree' });
 }
 
-/* L envoi d une photo est borne dans le temps : si le stockage Firebase ne
-   repond pas (bucket inactif, reseau trop faible), la page recoit une erreur
-   au lieu de rester bloquee sur "Envoi des photos". */
+/* Photos : envoi non signe vers Cloudinary. L envoi est borne dans le temps :
+   si le service ne repond pas (reseau faible, preset refuse), la page recoit
+   une erreur au lieu de rester bloquee sur "Envoi des photos". */
 const PHOTO_TIMEOUT_MS = 30000;
-const STORAGE_UNAVAILABLE =
-  'L envoi des photos ne repond pas : l espace de stockage Firebase est peut-etre inactif, ou le reseau est trop faible.';
+const PHOTO_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/';
+const PHOTO_NOT_CONFIGURED =
+  'L envoi des photos n est pas encore configure : renseignez cloudName et uploadPreset dans js/images-config.js.';
+const PHOTO_UNAVAILABLE =
+  'L envoi des photos ne repond pas : le reseau est peut-etre trop faible, ou le service est indisponible.';
 
 function withTimeout(promise, ms, message) {
   return new Promise((resolve, reject) => {
@@ -424,30 +422,42 @@ function withTimeout(promise, ms, message) {
   });
 }
 
-function storageErrorMessage(error) {
-  const code = (error && error.code) || '';
-  if (code === 'storage/unauthorized' || code === 'storage/unauthenticated') {
-    return 'Envoi de photo refuse : reconnectez-vous, puis reessayez.';
+function photoErrorMessage(status) {
+  if (status === 400 || status === 401 || status === 403) {
+    return 'Envoi de photo refuse : verifiez le cloudName et le preset non signe dans js/images-config.js.';
   }
-  if (code === 'storage/canceled') return 'Envoi de photo interrompu.';
-  if (code === 'storage/quota-exceeded') return 'Espace de stockage des photos sature.';
-  if (code === 'storage/invalid-checksum' || code === 'storage/invalid-argument') {
-    return 'Cette photo n a pas pu etre preparee. Essayez une autre image.';
-  }
-  return STORAGE_UNAVAILABLE;
+  if (status === 413) return 'Cette photo est trop lourde pour le service d hebergement.';
+  if (status === 429) return 'Trop de photos envoyees en peu de temps. Reessayez dans une minute.';
+  if (status >= 500) return 'Le service d hebergement des photos est momentanement indisponible.';
+  return PHOTO_UNAVAILABLE;
 }
 
 export async function uploadImage(blob) {
   assertConfigured();
+  if (!imageHostConfigured()) throw new Error(PHOTO_NOT_CONFIGURED);
   const user = await me();
   if (!user) throw new Error('Connectez-vous pour envoyer une photo.');
-  const name = 'listings/' + user.id + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
-  const target = ref(storage, name);
-  const transfer = uploadBytes(target, blob, { contentType: 'image/jpeg' }).then(
-    () => getDownloadURL(target),
-    (error) => { throw new Error(storageErrorMessage(error)); }
+
+  const body = new FormData();
+  body.append('file', blob, 'annonce-' + Date.now() + '.jpg');
+  body.append('upload_preset', imageHost.uploadPreset);
+
+  const transfer = fetch(
+    PHOTO_UPLOAD_URL + encodeURIComponent(imageHost.cloudName) + '/image/upload',
+    { method: 'POST', body: body }
+  ).then(
+    async (response) => {
+      let payload = null;
+      try { payload = await response.json(); } catch (error) { payload = null; }
+      if (!response.ok || !payload || !payload.secure_url) {
+        throw new Error(photoErrorMessage(response.status));
+      }
+      return payload.secure_url;
+    },
+    () => { throw new Error(PHOTO_UNAVAILABLE); }
   );
-  return withTimeout(transfer, PHOTO_TIMEOUT_MS, STORAGE_UNAVAILABLE);
+
+  return withTimeout(transfer, PHOTO_TIMEOUT_MS, PHOTO_UNAVAILABLE);
 }
 
 /* --- commentaires --- */

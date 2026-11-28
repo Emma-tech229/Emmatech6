@@ -1,7 +1,7 @@
 /* Tests de la couche de donnees de BeniGo (js/store.js).
-   La doublure test/mock-firebase.js remplace le SDK Firebase ; les regles
-   Firestore et Storage ne sont pas evaluees ici, seules les operations et les
-   controles faits par le client le sont.
+   La doublure test/mock-firebase.js remplace le SDK Firebase et le reseau est
+   simule pour l envoi des photos ; les regles Firestore ne sont pas evaluees
+   ici, seules les operations et les controles faits par le client le sont.
 
    Lancement : node test/store.test.mjs */
 
@@ -26,6 +26,13 @@ fs.writeFileSync(path.join(build, 'firebase-config.js'), [
   "  appId: '1:1:web:1'",
   '};',
   'export function isConfigured() { return true; }'
+].join('\n'));
+fs.writeFileSync(path.join(build, 'images-config.js'), [
+  'export const imageHost = {',
+  "  cloudName: 'demo-cloud',",
+  "  uploadPreset: 'benigo_test'",
+  '};',
+  'export function imageHostConfigured() { return true; }'
 ].join('\n'));
 
 const module = await import(pathToFileURL(path.join(build, 'store.js')).href);
@@ -119,21 +126,57 @@ ok('filtre par categorie', (await BeniGo.listings({ category: 'Maison' })).lengt
 ok('recherche sans resultat', (await BeniGo.listings({ q: 'velo' })).length === 0);
 ok('detail annonce', (await BeniGo.listing(listing.id)).title === 'Samsung A24 128 Go');
 
-/* Images : la couche cliente envoie le binaire et recupere une URL. */
-const url = await BeniGo.uploadImage(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' }));
-ok('upload image', url.startsWith('https://storage.test/listings/'), url);
+/* Images : la couche cliente envoie le binaire au service d hebergement
+   (Cloudinary, preset non signe) et recupere une URL publique. Le reseau est
+   simule : aucun envoi reel n a lieu pendant les tests. */
+const vraiFetch = globalThis.fetch;
+let envoi = null;
+globalThis.fetch = async (url, options) => {
+  envoi = { url: String(url), body: options && options.body };
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({ secure_url: 'https://res.cloudinary.test/benigo/photo.jpg' })
+  };
+};
 
-/* Une panne de stockage doit remonter une erreur claire, sans bloquer la page. */
-const firebase = await import(pathToFileURL(path.join(build, 'firebase.js')).href);
-firebase.__storageFails('storage/unknown');
-await rejects(
-  'panne de stockage signalee',
-  () => BeniGo.uploadImage(new Blob([new Uint8Array([1])], { type: 'image/jpeg' })),
-  'stockage'
+const url = await BeniGo.uploadImage(new Blob([new Uint8Array([1, 2, 3])], { type: 'image/jpeg' }));
+ok('upload image', url === 'https://res.cloudinary.test/benigo/photo.jpg', url);
+ok(
+  'envoi vers le service configure',
+  envoi.url === 'https://api.cloudinary.com/v1_1/demo-cloud/image/upload',
+  envoi.url
 );
-firebase.__storageFails(null);
+ok('preset d envoi transmis', envoi.body.get('upload_preset') === 'benigo_test');
+ok('fichier joint a l envoi', envoi.body.get('file') instanceof Blob);
+
+/* Un refus du service doit remonter une erreur claire, sans bloquer la page. */
+globalThis.fetch = async () => ({
+  ok: false,
+  status: 400,
+  json: async () => ({ error: { message: 'Upload preset must be whitelisted' } })
+});
+await rejects(
+  'refus du service signale',
+  () => BeniGo.uploadImage(new Blob([new Uint8Array([1])], { type: 'image/jpeg' })),
+  'verifiez le cloudName'
+);
+
+/* Une coupure reseau doit aussi remonter une erreur, puis l envoi repart. */
+globalThis.fetch = async () => { throw new TypeError('Failed to fetch'); };
+await rejects(
+  'reseau coupe signale',
+  () => BeniGo.uploadImage(new Blob([new Uint8Array([1])], { type: 'image/jpeg' })),
+  'reseau'
+);
+globalThis.fetch = async () => ({
+  ok: true,
+  status: 200,
+  json: async () => ({ secure_url: 'https://res.cloudinary.test/benigo/reprise.jpg' })
+});
 const reprise = await BeniGo.uploadImage(new Blob([new Uint8Array([1])], { type: 'image/jpeg' }));
-ok('envoi retabli apres la panne', reprise.startsWith('https://storage.test/listings/'), reprise);
+ok('envoi retabli apres la panne', reprise === 'https://res.cloudinary.test/benigo/reprise.jpg', reprise);
+globalThis.fetch = vraiFetch;
 
 /* Commentaires */
 await BeniGo.addComment(listing.id, 'Toujours disponible ?');

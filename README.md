@@ -7,8 +7,9 @@ livreur. BeniGo ne detient jamais l'argent des achats.
 
 Pages en HTML/CSS/JS separes, sans framework ni build. Le backend partage est
 **Firebase** : Firebase Authentication pour les comptes, Cloud Firestore pour
-les annonces, commentaires et commandes, Cloud Storage pour les photos. Aucune
-fonction serveur n'est necessaire : le site est entierement statique.
+les annonces, commentaires et commandes, **Cloudinary** pour les photos des
+annonces. Aucune fonction serveur n'est necessaire : le site est entierement
+statique.
 
 ## Pourquoi pas de paiement en ligne
 
@@ -34,8 +35,16 @@ notarial. Aucune de ces deux options ne demande de detenir les fonds soi-meme.
 2. **Authentication** > Sign-in method : activez **Email/Password**.
 3. **Firestore Database** : creez la base, puis collez le contenu de
    [firestore.rules](firestore.rules) dans l'onglet **Regles** et publiez.
-4. **Storage** : creez le bucket, puis collez [storage.rules](storage.rules)
-   dans l'onglet **Regles** et publiez.
+4. **Photos (Cloudinary)** : le compte et le preset non signe
+   `benigo_annonces` sont deja crees, et le site envoie les photos directement
+   depuis le navigateur (Firebase Storage n'est pas utilise). Le *cloud name*
+   et le preset sont dans [js/images-config.js](js/images-config.js). Le compte
+   est provisoire tant qu'il n'est pas reclame : reclamez-le avec le lien
+   fourni lors de la mise en place, sinon il expire au bout de 24 heures avec
+   les photos qu'il contient. Pour repartir d'un compte personnel :
+   https://cloudinary.com (gratuit, sans carte), **Settings > Upload > Upload
+   presets > Add upload preset** en **Signing mode : Unsigned**, puis recopiez
+   le *Cloud name* et le nom du preset dans `js/images-config.js`.
 
 Tant que `js/firebase-config.js` n'est pas rempli, un bandeau rouge s'affiche en
 haut des pages et les actions sont refusees avec un message explicite.
@@ -49,17 +58,18 @@ connexion a Firestore, au Storage et l'etat des fournisseurs :
 node test/verifier-firebase.mjs
 ```
 
-Le script lit `js/firebase-config.js`, telecharge les modules du SDK, verifie la
-cle API, lit la collection `listings` (lecture publique) et interroge le bucket
-Storage. Pour controler aussi les regles Firestore et un vrai envoi d'image,
-ajoutez un compte de test :
+Le script lit `js/firebase-config.js` et `js/images-config.js`, telecharge les
+modules du SDK, verifie la cle API, lit la collection `listings` (lecture
+publique) et controle la configuration de l'hebergement des photos. Pour
+controler aussi les regles Firestore avec un compte de test :
 
 ```
 BENIGO_EMAIL=vous@exemple.bj BENIGO_PASSWORD=votre-mot-de-passe node test/verifier-firebase.mjs
 ```
 
-Avec ce compte, le script lit `users/{uid}`, depose une petite image sous
-`listings/{uid}/`, la relit puis la supprime. Chaque ligne s'affiche `ok`,
+Avec ce compte, le script lit `users/{uid}`. Ajoutez `BENIGO_VERIFY_PHOTO=1`
+pour tester un vrai envoi de photo vers Cloudinary (une petite image de
+verification reste alors dans la media library). Chaque ligne s'affiche `ok`,
 `note`, `saute` ou `ECHEC` avec la correction a faire, et la commande renvoie le
 code de sortie 1 des qu'une verification echoue.
 
@@ -156,7 +166,8 @@ node test/store.test.mjs
 Les tests executent `js/store.js` contre une doublure en memoire du SDK Firebase
 ([test/mock-firebase.js](test/mock-firebase.js)) : comptes, annonces,
 commentaires, images, commande, reservation, parcours de remise et droits
-d'acces. Les regles Firestore et Storage ne sont pas evaluees par ces tests :
+d'acces. L'envoi de photo est simule (aucun appel reseau). Les regles Firestore
+ne sont pas evaluees par ces tests :
 c'est le role de `test/verifier-firebase.mjs`, qui interroge le vrai projet une
 fois configure.
 
@@ -179,8 +190,13 @@ fois configure.
 - L'unicite du numero de telephone est verifiee cote client avant l'inscription,
   sans index unique cote base : deux inscriptions simultanees avec le meme
   numero restent possibles.
+- Les photos passent par Cloudinary en preset non signe : le nom du preset est
+  public, donc une personne mal intentionnee peut deposer des images dans votre
+  compte. Reglez le preset sur un dossier `benigo`, une taille maximale et les
+  formats acceptes, et surveillez la media library. Pour supprimer l'envoi non
+  signe, il faut un backend qui signe les envois.
 - Les fichiers de regles sont fournis pour etre colles dans la console ;
-  ils peuvent aussi etre deplies avec `firebase deploy --only firestore:rules,storage`.
+  ils peuvent aussi etre deplies avec `firebase deploy --only firestore:rules`.
 
 `js/qrcode.min.js` est QRCode.js (MIT, davidshimjs), utilise pour le code de
 remise.
